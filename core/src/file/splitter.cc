@@ -82,8 +82,8 @@ splitter::splitter(
       base_name = _base_path;
     }
     else {
-      base_dir = _base_path.substr(0, last_slash).c_str();
-      base_name = _base_path.substr(last_slash + 1).c_str();
+      base_dir = _base_path.substr(0, last_slash);
+      base_name = _base_path.substr(last_slash + 1);
     }
   }
   fs_browser::entry_list parts;
@@ -101,6 +101,8 @@ splitter::splitter(
        ++it) {
     char const* ptr(it->c_str() + base_name.size());
     int val(0);
+    // We check if there are multiple files, their names are followed by
+    // an integer.
     if (*ptr) { // Not, empty, conversion needed.
       char* endptr(NULL);
       val = strtol(ptr, &endptr, 10);
@@ -353,8 +355,12 @@ void splitter::remove_all_files() {
 void splitter::_open_read_file() {
   _rfile.clear();
 
-  // If we reached write-ID and wfile is open, use it.
-  if ((_rid == _wid) && !_wfile.isNull())
+  // As wfile can just have been opened with a position at the end of a
+  // big file, we must check that the position is well at the beginning of
+  // the file to avoid to overwrite it.
+  // If we reached write-ID and wfile is open, and the position indicator is 0
+  if ((_rid == _wid) && !_wfile.isNull()
+      && _wfile->tell() == 2 * sizeof(uint32_t))
     _rfile = _wfile;
   // Otherwise open next file.
   else {

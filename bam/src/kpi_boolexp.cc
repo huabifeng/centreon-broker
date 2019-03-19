@@ -21,6 +21,7 @@
 #include "com/centreon/broker/bam/kpi_boolexp.hh"
 #include "com/centreon/broker/bam/kpi_status.hh"
 #include "com/centreon/broker/logging/logging.hh"
+#include "com/centreon/engine/common.hh"
 
 using namespace com::centreon::broker;
 using namespace com::centreon::broker::bam;
@@ -272,12 +273,14 @@ void kpi_boolexp::_open_new_event(
 short kpi_boolexp::_get_state() const {
   if (_boolexp->state_known())
     return (_boolexp->get_state());
-  else {
-    if (!_event.isNull())
-      return (_event->status);
-    else
-      return (_boolexp->get_state());
-  }
+//  else {
+//   if (!_event.isNull())
+//     return (_event->status);
+//   else
+//     return (_boolexp->get_state());
+//  }
+  else
+    return STATE_UNKNOWN;    // UNKNOWN
 }
 
 /**
