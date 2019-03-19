@@ -203,7 +203,7 @@ void reader::_load(state::bas& bas, bam::ba_svc_mapping& mapping) {
     database_query query(_db);
     {
       std::ostringstream oss;
-      oss << "SELECT b.ba_id, b.name, b.level_w, b.level_c,"
+      oss << "SELECT b.ba_id, b.name, b.state_source, b.level_w, b.level_c,"
              "       b.last_state_change, b.current_status, b.in_downtime,"
              "       b.inherit_kpi_downtimes"
              "  FROM cfg_bam AS b"
@@ -221,17 +221,19 @@ void reader::_load(state::bas& bas, bam::ba_svc_mapping& mapping) {
         ba(
           ba_id, // ID.
           query.value(1).toString().toStdString(), // Name.
-          query.value(2).toFloat(), // Warning level.
-          query.value(3).toFloat(), // Critical level.
-          query.value(7).toBool()); // Downtime inheritance.
+          static_cast<configuration::ba::state_source>(
+            query.value(2).toUInt()), // State source.
+          query.value(3).toFloat(), // Warning level.
+          query.value(4).toFloat(), // Critical level.
+          query.value(8).toBool()); // Downtime inheritance.
 
       // BA state.
-      if (!query.value(4).isNull()) {
+      if (!query.value(5).isNull()) {
         ba_event e;
         e.ba_id = ba_id;
-        e.start_time = query.value(4).toLongLong();
-        e.status = query.value(5).toInt();
-        e.in_downtime = query.value(6).toBool();
+        e.start_time = query.value(5).toLongLong();
+        e.status = query.value(6).toInt();
+        e.in_downtime = query.value(7).toBool();
         bas[ba_id].set_opened_event(e);
       }
     }

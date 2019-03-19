@@ -44,6 +44,35 @@ static double normalize(double d) {
   return (d);
 }
 
+static bool is_state_worst(short current_state, short new_state) {
+  // OK => something else
+  if (current_state == 0 && new_state != 0)
+    return true;
+  // WARNING => CRITICAL
+  if (current_state == 1 && new_state == 2)
+    return true;
+  // UNKNOWN => WARNING or CRITICAL
+  if (current_state == 3 && (new_state == 1 || new_state == 2))
+    return true;
+
+  return false;
+}
+
+static bool is_state_best(short current_state, short new_state) {
+  // CRITICAL => something else
+  if (current_state == 2 && new_state != 2)
+    return true;
+  // UNKNOWN => OK
+  if (current_state == 3 && new_state == 0)
+    return true;
+  // WARNING => UNKNOW or OK
+  if (current_state == 1 && (new_state == 0 || new_state == 3))
+    return true;
+
+  return false;
+}
+
+
 /**
  *  Constructor.
  *
@@ -52,7 +81,10 @@ static double normalize(double d) {
  *                                      virtual hosts and services.
  */
 ba::ba(bool generate_virtual_status)
-  : _acknowledgement_hard(0.0),
+  : _state_source(configuration::ba::state_source_impact),
+    _computed_state_soft(0),
+    _computed_state_hard(0),
+    _acknowledgement_hard(0.0),
     _acknowledgement_soft(0.0),
     _downtime_hard(0.0),
     _downtime_soft(0.0),
@@ -113,7 +145,7 @@ void ba::add_impact(std::shared_ptr<kpi> const& impact) {
     impact->impact_hard(ii.hard_impact);
     impact->impact_soft(ii.soft_impact);
     ii.in_downtime = impact->in_downtime();
-    _apply_impact(ii);
+    _apply_impact(impact.data(), ii);
     timestamp last_state_change(impact->get_last_state_change());
     if (last_state_change.get_time_t() != (time_t)-1)
       _last_kpi_update = std::max(
@@ -164,13 +196,14 @@ bool ba::child_has_update(
                                 last_state_change.get_time_t());
 
     // Discard old data.
-    _unapply_impact(it->second);
+    _unapply_impact(it->first, it->second);
+
 
     // Apply new data.
     it->second.hard_impact = new_hard_impact;
     it->second.soft_impact = new_soft_impact;
     it->second.in_downtime = kpi_in_downtime;
-    _apply_impact(it->second);
+    _apply_impact(it->first, it->second);
 
     // Check for inherited downtimes.
     _compute_inherited_downtime(visitor);
@@ -316,14 +349,21 @@ std::string ba::get_perfdata() const {
  */
 short ba::get_state_hard() {
   short state;
-  if (!_valid)
-    state = 3;
-  else if (_level_hard <= _level_critical)
-    state = 2;
-  else if (_level_hard <= _level_warning)
-    state = 1;
+
+  if (_state_source == configuration::ba::state_source_impact)
+    if (!_valid)
+        state = 3;
+    else if (_level_hard <= _level_critical)
+        state = 2;
+    else if (_level_hard <= _level_warning)
+        state = 1;
+    else
+        state = 0;
+  else if (_state_source == configuration::ba::state_source_best ||
+    _state_source == configuration::ba::state_source_worst)
+    state = _computed_state_hard;
   else
-    state = 0;
+    state = 3;      // unknown _state_source so unknown state...
   return (state);
 }
 
@@ -334,15 +374,30 @@ short ba::get_state_hard() {
  */
 short ba::get_state_soft() {
   short state;
-  if (!_valid)
-    state = 3;
-  else if (_level_soft <= _level_critical)
-    state = 2;
-  else if (_level_soft <= _level_warning)
-    state = 1;
+  if (_state_source == configuration::ba::state_source_impact)
+    if (!_valid)
+        state = 3;
+    else if (_level_soft <= _level_critical)
+        state = 2;
+    else if (_level_soft <= _level_warning)
+        state = 1;
+    else
+        state = 0;
+  else if (_state_source == configuration::ba::state_source_best ||
+    _state_source == configuration::ba::state_source_worst)
+    state = _computed_state_soft;
   else
-    state = 0;
+    state = 3;      // unknown _state_source so unknown state...*/
   return (state);
+}
+
+/**
+ *  Get BA state source.
+ *
+ *  @return BA state source.
+ */
+configuration::ba::state_source ba::get_state_source(void) const {
+  return _state_source;
 }
 
 /**
@@ -354,7 +409,7 @@ void ba::remove_impact(std::shared_ptr<kpi> const& impact) {
   umap<kpi*, impact_info>::iterator
     it(_impacts.find(impact.get()));
   if (it != _impacts.end()) {
-    _unapply_impact(it->second);
+    _unapply_impact(it->first, it->second);
     _impacts.erase(it);
   }
   return ;
@@ -454,6 +509,17 @@ void ba::set_valid(bool valid) {
 void ba::set_inherit_kpi_downtime(bool value) {
   _inherit_kpi_downtime = value;
 }
+
+/**
+ * @brief Set the state source
+ *
+ *  @param[in] state_source  The spource to set.
+ */
+void ba::set_state_source(configuration::ba::state_source state_source)
+{
+  _state_source = state_source;
+}
+
 
 /**
  *  Visit BA.
@@ -627,7 +693,7 @@ void ba::set_inherited_downtime(
  *
  *  @param[in] impact Impact information.
  */
-void ba::_apply_impact(ba::impact_info& impact) {
+void ba::_apply_impact(kpi *kpi_ptr, ba::impact_info& impact) {
   // Adjust values.
   _acknowledgement_hard += impact.hard_impact.get_acknowledgement();
   _acknowledgement_soft += impact.soft_impact.get_acknowledgement();
@@ -636,6 +702,18 @@ void ba::_apply_impact(ba::impact_info& impact) {
   _level_hard -= impact.hard_impact.get_nominal();
   _level_soft -= impact.soft_impact.get_nominal();
 
+  if (_state_source == configuration::ba::state_source_best) {
+    if (is_state_best(_computed_state_soft, impact.soft_impact.get_state()))
+      _computed_state_soft = impact.soft_impact.get_state();
+    if (is_state_best(_computed_state_hard, impact.hard_impact.get_state()))
+      _computed_state_hard = impact.hard_impact.get_state();
+
+  } else if (_state_source == configuration::ba::state_source_worst) {
+    if (is_state_worst(_computed_state_soft, impact.soft_impact.get_state()))
+      _computed_state_soft = impact.soft_impact.get_state();
+    if (is_state_worst(_computed_state_hard, impact.hard_impact.get_state()))
+      _computed_state_hard = impact.hard_impact.get_state();
+  }
   return ;
 }
 
@@ -652,7 +730,11 @@ void ba::_internal_copy(ba const& other) {
   _event = other._event;
   _generate_virtual_status = other._generate_virtual_status;
   _id = other._id;
+  _name = other._name;
   _service_id = other._service_id;
+  _state_source = other._state_source;
+  _computed_state_soft = other._computed_state_soft;
+  _computed_state_hard = other._computed_state_hard;
   _host_id = other._host_id;
   _impacts = other._impacts;
   _in_downtime = other._in_downtime;
@@ -700,12 +782,13 @@ void ba::_recompute() {
   _downtime_soft = 0.0;
   _level_hard = 100.0;
   _level_soft = 100.0;
+
   for (umap<kpi*, impact_info>::iterator
          it(_impacts.begin()),
          end(_impacts.end());
        it != end;
        ++it)
-    _apply_impact(it->second);
+    _apply_impact(it->first, it->second);
   _recompute_count = 0;
   return ;
 }
@@ -715,20 +798,37 @@ void ba::_recompute() {
  *
  *  @param[in] impact Impact information.
  */
-void ba::_unapply_impact(ba::impact_info& impact) {
+void ba::_unapply_impact(kpi *kpi_ptr, ba::impact_info& impact) {
   // Prevent derive of values.
-  ++_recompute_count;
-  if (_recompute_count >= _recompute_limit)
-    _recompute();
+  if (_state_source == configuration::ba::state_source_impact) {
+    ++_recompute_count;
+    if (_recompute_count >= _recompute_limit)
+      _recompute();
 
-  // Adjust values.
-  _acknowledgement_hard -= impact.hard_impact.get_acknowledgement();
-  _acknowledgement_soft -= impact.soft_impact.get_acknowledgement();
-  _downtime_hard -= impact.hard_impact.get_downtime();
-  _downtime_soft -= impact.soft_impact.get_downtime();
-  _level_hard += impact.hard_impact.get_nominal();
-  _level_soft += impact.soft_impact.get_nominal();
+    // Adjust values.
+    _acknowledgement_hard -= impact.hard_impact.get_acknowledgement();
+    _acknowledgement_soft -= impact.soft_impact.get_acknowledgement();
+    _downtime_hard -= impact.hard_impact.get_downtime();
+    _downtime_soft -= impact.soft_impact.get_downtime();
+    _level_hard += impact.hard_impact.get_nominal();
+    _level_soft += impact.soft_impact.get_nominal();
+  } else
+    if (_computed_state_soft == impact.soft_impact.get_state() ||
+      _computed_state_hard == impact.hard_impact.get_state()) {
+      if (_state_source == configuration::ba::state_source_best)
+        _computed_state_soft = _computed_state_hard = 2;
+      else if (_state_source == configuration::ba::state_source_worst)
+        _computed_state_soft = _computed_state_hard = 0;
 
+      //We recompute all impact, execpt the one to unapply...
+      for (umap<kpi*, impact_info>::iterator
+            it(_impacts.begin()),
+            end(_impacts.end());
+          it != end;
+          ++it)
+        if (it->first != kpi_ptr)
+          _apply_impact(it->first, it->second);
+    }
   return ;
 }
 

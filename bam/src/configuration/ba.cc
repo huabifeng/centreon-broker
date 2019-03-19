@@ -33,6 +33,7 @@ using namespace com::centreon::broker::bam::configuration;
 ba::ba(
       unsigned int id,
       std::string const& name,
+      ba::state_source source,
       double warning_level,
       double critical_level,
       bool inherit_kpi_downtime):
@@ -40,6 +41,7 @@ ba::ba(
   _host_id(0),
   _service_id(0),
   _name(name),
+  _state_source(source),
   _warning_level(warning_level),
   _critical_level(critical_level),
   _inherit_kpi_downtime(inherit_kpi_downtime) {}
@@ -54,6 +56,7 @@ ba::ba(ba const& other)
     _host_id(other._host_id),
     _service_id(other._service_id),
     _name(other._name),
+    _state_source(other._state_source),
     _warning_level(other._warning_level),
     _critical_level(other._critical_level),
     _event(other._event),
@@ -77,6 +80,7 @@ ba& ba::operator=(ba const& other) {
     _host_id = other._host_id;
     _service_id = other._service_id;
     _name =  other._name;
+    _state_source = other._state_source;
     _warning_level = other._warning_level;
     _critical_level = other._critical_level;
     _event = other._event;
@@ -97,6 +101,7 @@ bool ba::operator==(ba const& right) const {
           && (_host_id == right._host_id)
           && (_service_id == right._service_id)
           && (_name == right._name)
+          && (_state_source == right._state_source)
           && (_warning_level == right._warning_level)
           && (_critical_level == right._critical_level)
           && (_event == right._event)
@@ -148,6 +153,15 @@ unsigned int ba::get_service_id() const {
  */
 std::string const& ba::get_name() const {
   return (_name);
+}
+
+/**
+ *  Get state source of the business activity.
+ *
+ *  @return The state source.
+ */
+ba::state_source ba::get_state_source() const {
+  return (_state_source);
 }
 
 /**
@@ -220,6 +234,15 @@ void ba::set_service_id(unsigned int service_id) {
  */
 void ba::set_name(std::string const& name) {
   _name = name;
+}
+
+/**
+ *  Set state source.
+ *
+ *  @param[in] source State source of the BA.
+ */
+void ba::set_state_source(ba::state_source source) {
+  _state_source = source;
 }
 
 /**

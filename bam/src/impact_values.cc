@@ -31,10 +31,12 @@ using namespace com::centreon::broker::bam;
 impact_values::impact_values(
                  double nominal,
                  double acknowledgement,
-                 double downtime)
+                 double downtime,
+                 short state)
   : _acknowledgement(acknowledgement),
     _downtime(downtime),
-    _nominal(nominal) {}
+    _nominal(nominal),
+    _state(state){}
 
 /**
  *  Copy constructor.
@@ -75,7 +77,8 @@ bool impact_values::operator==(impact_values const& other) const throw() {
     return true;
   return (_acknowledgement == other._acknowledgement &&
           _downtime == other._downtime &&
-          _nominal == other._nominal);
+          _nominal == other._nominal &&
+          _state == other._state);
 }
 
 /**
@@ -104,6 +107,16 @@ double impact_values::get_downtime() const {
 double impact_values::get_nominal() const {
   return (_nominal);
 }
+
+/**
+ *  Get impact state.
+ *
+ *  @return State impact.
+ */
+short impact_values::get_state() const {
+  return (_state);
+}
+
 
 /**
  *  Set impact induced by acknowledgement.
@@ -136,6 +149,16 @@ void impact_values::set_nominal(double nominal) {
 }
 
 /**
+ *  Set impact state.
+ *
+ *  @param[in] state  State impact.
+ */
+void impact_values::set_state(short state) {
+  _state = state;
+  return ;
+}
+
+/**
  *  Copy internal data members.
  *
  *  @param[in] other  Object to copy.
@@ -144,5 +167,6 @@ void impact_values::_internal_copy(impact_values const& other) {
   _acknowledgement = other._acknowledgement;
   _downtime = other._downtime;
   _nominal = other._nominal;
+  _state = other._state;
   return ;
 }

@@ -22,6 +22,7 @@
 #  include <memory>
 #  include <string>
 #  include <vector>
+#  include "com/centreon/broker/bam/configuration/ba.hh"
 #  include "com/centreon/broker/bam/ba_event.hh"
 #  include "com/centreon/broker/bam/ba_duration_event.hh"
 #  include "com/centreon/broker/bam/computable.hh"
@@ -72,6 +73,8 @@ namespace        bam {
     std::string  get_perfdata() const;
     short        get_state_hard();
     short        get_state_soft();
+    configuration::ba::state_source
+                 get_state_source() const;
     void         remove_impact(std::shared_ptr<kpi> const& impact);
     void         set_id(unsigned int id);
     void         set_host_id(unsigned int host_id);
@@ -82,6 +85,8 @@ namespace        bam {
     void         set_name(std::string const& name);
     void         set_valid(bool valid);
     void         set_inherit_kpi_downtime(bool value);
+    void         set_state_source(
+                   configuration::ba::state_source source);
     void         visit(io::stream* visitor);
     void         service_update(
                    std::shared_ptr<neb::downtime> const& dt,
@@ -101,15 +106,18 @@ namespace        bam {
       bool                  in_downtime;
     };
 
-    void         _apply_impact(impact_info& impact);
+    void         _apply_impact(kpi *kpi_ptr, impact_info& impact);
     void         _internal_copy(ba const& other);
     void         _open_new_event(
                    io::stream* visitor,
                    short service_hard_state);
     void         _recompute();
-    void         _unapply_impact(impact_info& impact);
+    void         _unapply_impact(kpi *kpi_ptr, impact_info& impact);
     void         _compute_inherited_downtime(io::stream* visitor);
-
+    configuration::ba::state_source
+                 _state_source;
+    short        _computed_state_soft;
+    short        _computed_state_hard;
     double       _acknowledgement_hard;
     double       _acknowledgement_soft;
     double       _downtime_hard;

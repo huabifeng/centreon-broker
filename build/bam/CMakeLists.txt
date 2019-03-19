@@ -188,6 +188,7 @@ set_target_properties("${BAM}" PROPERTIES PREFIX "")
 set(
   TESTS_SOURCES
   ${TESTS_SOURCES}
+  "${TEST_DIR}/ba/kpi_change_at_recompute.cc"
   "${TEST_DIR}/exp_parser/get_postfix.cc"
   "${TEST_DIR}/exp_tokenizer/next.cc"
   "${TEST_DIR}/exp_builder/exp_builder.cc"
@@ -202,14 +203,6 @@ set(
 )
 if (0) # WITH_TESTING)
   set(TEST_LIBRARIES "${NEB}" "${BAM}" "roker")
-
-  # ba tests.
-  #   KPI change at recompute.
-  set(TEST_NAME "bam_ba_kpi_change_at_recompute")
-  add_executable("${TEST_NAME}"
-    "${TEST_DIR}/ba/kpi_change_at_recompute.cc")
-  target_link_libraries("${TEST_NAME}" ${TEST_LIBRARIES})
-  add_test("${TEST_NAME}" "${TEST_NAME}")
 
   # time tests.
   set(CHECK_TIMEPERIOD "check_timeperiod")
