@@ -81,6 +81,7 @@ namespace        bam {
     void         set_service_id(unsigned int service_id);
     void         set_level_critical(double level);
     void         set_level_warning(double level);
+    void         set_level_ratio(double ratio);
     void         set_initial_event(ba_event const& event);
     void         set_name(std::string const& name);
     void         set_valid(bool valid);
@@ -116,8 +117,6 @@ namespace        bam {
     void         _compute_inherited_downtime(io::stream* visitor);
     configuration::ba::state_source
                  _state_source;
-    short        _computed_state_soft;
-    short        _computed_state_hard;
     double       _acknowledgement_hard;
     double       _acknowledgement_soft;
     double       _downtime_hard;
@@ -131,10 +130,21 @@ namespace        bam {
                  _impacts;
     bool         _in_downtime;
     timestamp    _last_kpi_update;
+
+    //impact mode
+    double       _level_warning;
     double       _level_critical;
     double       _level_hard;
     double       _level_soft;
-    double       _level_warning;
+
+    //best worst mode
+    short        _computed_state_soft;
+    short        _computed_state_hard;
+
+    //ratio mode
+    unsigned int _num_critical_childs;
+    double       _level_ratio; //number or percent depending _state_source
+
     std::string  _name;
     int          _recompute_count;
     unsigned int _service_id;

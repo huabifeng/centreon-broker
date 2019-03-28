@@ -36,6 +36,7 @@ ba::ba(
       ba::state_source source,
       double warning_level,
       double critical_level,
+      double ratio_level,
       bool inherit_kpi_downtime):
   _id(id),
   _host_id(0),
@@ -44,6 +45,7 @@ ba::ba(
   _state_source(source),
   _warning_level(warning_level),
   _critical_level(critical_level),
+  _ratio_level(ratio_level),
   _inherit_kpi_downtime(inherit_kpi_downtime) {}
 
 /**
@@ -59,6 +61,7 @@ ba::ba(ba const& other)
     _state_source(other._state_source),
     _warning_level(other._warning_level),
     _critical_level(other._critical_level),
+    _ratio_level(other._ratio_level),
     _event(other._event),
     _inherit_kpi_downtime (other._inherit_kpi_downtime) {}
 
@@ -83,6 +86,7 @@ ba& ba::operator=(ba const& other) {
     _state_source = other._state_source;
     _warning_level = other._warning_level;
     _critical_level = other._critical_level;
+    _ratio_level = other._ratio_level;
     _event = other._event;
     _inherit_kpi_downtime = other._inherit_kpi_downtime;
   }
@@ -104,6 +108,7 @@ bool ba::operator==(ba const& right) const {
           && (_state_source == right._state_source)
           && (_warning_level == right._warning_level)
           && (_critical_level == right._critical_level)
+          && (_ratio_level == right._ratio_level)
           && (_event == right._event)
           && (_inherit_kpi_downtime == right._inherit_kpi_downtime));
 }
@@ -180,6 +185,15 @@ double ba::get_warning_level() const {
  */
 double ba::get_critical_level() const {
   return (_critical_level);
+}
+
+/**
+ *  Get ratio level.
+ *
+ *  @return The percentage/number for the ratio level.
+ */
+double ba::get_ratio_level() const {
+  return (_ratio_level);
 }
 
 /**
@@ -261,6 +275,15 @@ void ba::set_warning_level(double warning_level) {
  */
 void ba::set_critical_level(double critical_level) {
   _critical_level = critical_level;
+}
+
+/**
+ *  Set the percentage for ratio level.
+ *
+ *  @param[in] ratio_level Ratio level.
+ */
+void ba::set_ratio_level(double ratio_level) {
+  _ratio_level = ratio_level;
 }
 
 /**

@@ -40,7 +40,9 @@ namespace                bam {
       typedef enum {
         state_source_impact,
         state_source_best,
-        state_source_worst
+        state_source_worst,
+        state_source_ratio_number,
+        state_source_ratio_percent
       }state_source;
                          ba(
                            unsigned int id = 0,
@@ -48,6 +50,7 @@ namespace                bam {
                            ba::state_source source = state_source_impact,
                            double warning_level = 0.0,
                            double critical_level = 0.0,
+                           double ratio_level = 0.0,
                            bool inherit_kpi_downtime = false);
                          ba(ba const& right);
                          ~ba();
@@ -62,6 +65,7 @@ namespace                bam {
       ba::state_source   get_state_source() const;
       double             get_warning_level() const;
       double             get_critical_level() const;
+      double             get_ratio_level() const;
       bam::ba_event const&
                          get_opened_event() const;
       unsigned int       get_default_timeperiod() const;
@@ -76,6 +80,7 @@ namespace                bam {
       void               set_state_source(ba::state_source state);
       void               set_warning_level(double warning_level);
       void               set_critical_level(double critical_level);
+      void               set_ratio_level(double ratio_level);
       void               set_opened_event(bam::ba_event const& e);
       void               set_inherit_kpi_downtime(bool value);
 
@@ -87,6 +92,7 @@ namespace                bam {
       ba::state_source   _state_source;
       double             _warning_level;
       double             _critical_level;
+      double             _ratio_level;
       bam::ba_event      _event;
       bool               _inherit_kpi_downtime;
     };

@@ -172,6 +172,7 @@ void applier::ba::apply(
       pos->second.obj->set_state_source(it->get_state_source());
       pos->second.obj->set_level_warning(it->get_warning_level());
       pos->second.obj->set_level_critical(it->get_critical_level());
+      pos->second.obj->set_level_ratio(it->get_ratio_level());
       pos->second.cfg = *it;
     }
     else
@@ -299,6 +300,7 @@ std::shared_ptr<bam::ba> applier::ba::_new_ba(
   obj->set_state_source(cfg.get_state_source());
   obj->set_level_warning(cfg.get_warning_level());
   obj->set_level_critical(cfg.get_critical_level());
+  obj->set_level_ratio(cfg.get_ratio_level());
   obj->set_inherit_kpi_downtime(cfg.get_inherit_kpi_downtime());
   if (cfg.get_opened_event().ba_id)
     obj->set_initial_event(cfg.get_opened_event());

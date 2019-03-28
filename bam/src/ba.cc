@@ -464,6 +464,16 @@ void ba::set_level_warning(double level) {
 }
 
 /**
+ *  Set ratio level.
+ *
+ *  @param[in] level  Ratio level.
+ */
+void ba::set_level_ratio(double level) {
+  _level_ratio = level;
+  return ;
+}
+
+/**
  *  @brief Set the initial, opened event of this ba.
  *
  *  Useful for recovery after cbd stop.
