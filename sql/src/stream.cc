@@ -137,34 +137,52 @@ void stream::_host_instance_cache_create() {
 
 /**
  *  Remove host groups with no members from host groups table.
+ *
+ * @param instance_id Poller instance id
  */
-void stream::_clean_empty_host_groups(int poller_id) {
-  if (!_empty_host_groups_delete.prepared()) {
-    _empty_host_groups_delete = _mysql.prepare_query(
-      "DELETE FROM hostgroups"
-      " WHERE hostgroup_id"
-      " NOT IN (SELECT DISTINCT hostgroup_id FROM hosts_hostgroups)");
-  }
-  _mysql.run_statement(
-           _empty_host_groups_delete,
+void stream::_clean_empty_host_groups(int instance_id) {
+  logging::debug(logging::low)
+    << "SQL: remove empty host groups (instance_id:"
+    << instance_id << ")";
+  _mysql.run_query(
+           "LOCK TABLES hostgroups WRITE, hosts_hostgroups READ",
+           "SQL: could not lock hostgroups and hosts_hostgroups tables", false,
+           instance_id % _mysql.connections_count());
+  _mysql.run_query(
+           "DELETE FROM hostgroups"
+           " WHERE hostgroup_id"
+           " NOT IN (SELECT DISTINCT hostgroup_id FROM hosts_hostgroups)",
            "SQL: could not remove empty host groups", false,
-           poller_id % _mysql.connections_count());
+           instance_id % _mysql.connections_count());
+  _mysql.run_query(
+           "UNLOCK TABLES",
+           "SQL: could not unlock tables: ", false,
+           instance_id % _mysql.connections_count());
 }
 
 /**
  *  Remove service groups with no members from service groups table.
+ *
+ * @param instance_id Poller instance id
  */
-void stream::_clean_empty_service_groups(int poller_id) {
-  if (!_empty_service_groups_delete.prepared()) {
-    _empty_service_groups_delete = _mysql.prepare_query(
+void stream::_clean_empty_service_groups(int instance_id) {
+  logging::debug(logging::low)
+    << "SQL: remove empty service groups (instance_id:"
+    << instance_id << ")";
+  _mysql.run_query(
+           "LOCK TABLES servicegroups WRITE, services_servicegroups READ",
+           "SQL: could not lock servicegroups and services_servicegroups tables", false,
+           instance_id % _mysql.connections_count());
+  _mysql.run_query(
       "DELETE FROM servicegroups"
       " WHERE servicegroup_id"
-      " NOT IN (SELECT DISTINCT servicegroup_id FROM services_servicegroups)");
-  }
-  _mysql.run_statement(
-           _empty_service_groups_delete,
-           "SQL: could not remove empty service groups", false,
-           poller_id % _mysql.connections_count());
+      " NOT IN (SELECT DISTINCT servicegroup_id FROM services_servicegroups)",
+      "SQL: could not remove empty service groups", false,
+      instance_id % _mysql.connections_count());
+  _mysql.run_query(
+           "UNLOCK TABLES",
+           "SQL: could not unlock tables: ", false,
+           instance_id % _mysql.connections_count());
 }
 
 /**
@@ -179,6 +197,9 @@ void stream::_clean_tables(unsigned int instance_id) {
   // Database version.
   bool db_v2(_mysql.schema_version() == mysql::v2);
 
+  logging::debug(logging::low)
+    << "SQL: disable hosts and services (instance_id: "
+    << instance_id << ")";
   // Disable hosts and services.
   std::ostringstream oss;
   oss << "UPDATE " << (db_v2 ? "hosts" : "rt_hosts") << " AS h"
@@ -188,18 +209,29 @@ void stream::_clean_tables(unsigned int instance_id) {
         " SET h.enabled=0, s.enabled=0"
         " WHERE h.instance_id=" << instance_id;
   _mysql.run_query(
+       "LOCK TABLE hosts AS h WRITE, services AS s WRITE",
+       "SQL: could not lock hosts and services tables", false,
+       instance_id % _mysql.connections_count());
+  _mysql.run_query(
            oss.str(),
            "SQL: could not clean hosts and services tables: ", false,
            instance_id % _mysql.connections_count());
 
   // Remove host group memberships.
   if (db_v2) {
+    logging::debug(logging::low)
+      << "SQL: remove host group memberships (instance_id:"
+      << instance_id << ")";
     oss.str("");
     oss << "DELETE hosts_hostgroups"
         << " FROM hosts_hostgroups"
         << " LEFT JOIN hosts"
         << "   ON hosts_hostgroups.host_id=hosts.host_id"
         << " WHERE hosts.instance_id=" << instance_id;
+    _mysql.run_query(
+             "LOCK TABLES hosts_hostgroups WRITE, hosts READ",
+             "SQL: could not lock hosts_hostgroups and hosts tables", false,
+             instance_id % _mysql.connections_count());
     _mysql.run_query(
              oss.str(),
              "SQL: could not clean host groups memberships table: ", false,
@@ -208,12 +240,19 @@ void stream::_clean_tables(unsigned int instance_id) {
 
   // Remove service group memberships
   if (db_v2) {
+    logging::debug(logging::low)
+      << "SQL: remove service group memberships (instance_id:"
+      << instance_id << ")";
     oss.str("");
     oss << "DELETE services_servicegroups"
         << " FROM services_servicegroups"
         << " LEFT JOIN hosts"
         << "   ON services_servicegroups.host_id=hosts.host_id"
         << " WHERE hosts.instance_id=" << instance_id;
+    _mysql.run_query(
+             "LOCK TABLES services_servicegroups WRITE, hosts READ",
+             "SQL: could not lock services_servicegroups and services tables", false,
+             instance_id % _mysql.connections_count());
     _mysql.run_query(
              oss.str(),
              "SQL: could not clean service groups memberships table: ", false,
@@ -229,85 +268,96 @@ void stream::_clean_tables(unsigned int instance_id) {
     _clean_empty_service_groups(instance_id);
 
   // Remove host dependencies.
+  logging::debug(logging::low)
+    << "SQL: remove host dependencies (instance_id:"
+    << instance_id << ")";
   oss.str("");
-  oss << "DELETE FROM " << (db_v2
-                            ? "hosts_hosts_dependencies"
-                            : "rt_hosts_hosts_dependencies")
-      << "  WHERE host_id IN ("
-         "    SELECT host_id"
-         "      FROM " << (db_v2 ? "hosts" : "rt_hosts")
-      << "      WHERE instance_id=" << instance_id << ")"
-         "    OR dependent_host_id IN ("
-         "      SELECT host_id"
-         "        FROM " << (db_v2 ? "hosts" : "rt_hosts")
-      << "        WHERE instance_id=" << instance_id << ")";
+  oss << "DELETE hhd FROM hosts_hosts_dependencies AS hhd"
+         " INNER JOIN hosts as h"
+         " ON hhd.host_id=h.host_id OR hhd.dependent_host_id=h.host_id"
+         " WHERE h.instance_id=" << instance_id;
   _mysql.run_query(
-      oss.str(),
-      "SQL: could not clean host dependencies table: ", false,
-      instance_id % _mysql.connections_count());
+           "LOCK TABLES hosts_hosts_dependencies AS hhd WRITE,"
+           " hosts AS h READ",
+           "SQL: could not lock host dependencies or hosts tables: ", false,
+           instance_id % _mysql.connections_count());
+  _mysql.run_query(
+           oss.str(),
+           "SQL: could not clean host dependencies table: ", false,
+           instance_id % _mysql.connections_count());
 
   // Remove host parents.
+  logging::debug(logging::low)
+    << "SQL: remove host parents (instance_id:"
+    << instance_id << ")";
   oss.str("");
-  oss << "DELETE FROM " << (db_v2
-                            ? "hosts_hosts_parents"
-                            : "rt_hosts_hosts_parents")
-      << "  WHERE child_id IN ("
-         "    SELECT host_id"
-         "     FROM " << (db_v2 ? "hosts" : "rt_hosts")
-      << "     WHERE instance_id=" << instance_id << ")"
-         "    OR parent_id IN ("
-         "      SELECT host_id"
-         "      FROM " << (db_v2 ? "hosts" : "rt_hosts")
-      << "      WHERE instance_id=" << instance_id << ")";
+  oss << "DELETE hhp FROM hosts_hosts_parents AS hhp"
+         " INNER JOIN hosts as h"
+         " ON hhp.child_id=h.host_id OR hhp.parent_id=h.host_id"
+         " WHERE h.instance_id=" << instance_id;
+  _mysql.run_query(
+           "LOCK TABLES hosts_hosts_parents AS hhp WRITE,"
+           " hosts AS h READ",
+           "SQL: could not lock host parents or hosts tables: ", false,
+           instance_id % _mysql.connections_count());
   _mysql.run_query(
            oss.str(),
            "SQL: could not clean host parents table: ", false,
            instance_id % _mysql.connections_count());
 
-  // Remove service dependencies.
+//  // Remove service dependencies.
+  logging::debug(logging::low)
+    << "SQL: remove service dependencies (instance_id:"
+    << instance_id << ")";
   oss.str("");
-  oss << "DELETE FROM "
-      << (db_v2
-          ? "services_services_dependencies"
-          : "rt_services_services_dependencies")
-      << "  WHERE service_id IN ("
-         "    SELECT s.service_id"
-         "      FROM " << (db_v2 ? "services" : "rt_services")
-      << "        AS s"
-         "        INNER JOIN " << (db_v2 ? "hosts" : "rt_hosts")
-      << "          AS h"
-         "          ON h.host_id=s.host_id"
-         "      WHERE h.instance_id=" << instance_id << ")"
-         "    OR dependent_service_id IN ("
-         "      SELECT s.service_id "
-         "        FROM " << (db_v2 ? "services" : "rt_services")
-      << "          AS s"
-         "          INNER JOIN " << (db_v2 ? "hosts" : "rt_hosts")
-      << "            AS h"
-         "            ON h.host_id=s.host_id"
-         "        WHERE h.instance_id=" << instance_id << ")";
+  oss << "DELETE ssd FROM services_services_dependencies AS ssd"
+         " INNER JOIN services as s"
+         " ON ssd.service_id=s.service_id OR ssd.dependent_service_id=s.service_id"
+         " INNER JOIN hosts as h"
+         " ON s.host_id=h.host_id"
+         " WHERE h.instance_id=" << instance_id;
+  _mysql.run_query(
+           "LOCK TABLES services_services_dependencies AS ssd WRITE,"
+           " services AS s READ, hosts AS h READ",
+           "SQL: could not lock service dependencies, services or hosts tables: ", false,
+           instance_id % _mysql.connections_count());
   _mysql.run_query(
            oss.str(),
-           "SQL: could not clean service dependencies tables: ", false,
+           "SQL: could not clean host dependencies table: ", false,
            instance_id % _mysql.connections_count());
 
   // Remove list of modules.
+  logging::debug(logging::low)
+    << "SQL: remove list of modules (instance_id:"
+    << instance_id << ")";
   oss.str("");
   oss << "DELETE FROM " << (db_v2 ? "modules" : "rt_modules")
       << " WHERE instance_id=" << instance_id;
+  _mysql.run_query(
+           "LOCK TABLES modules WRITE",
+           "SQL: could not lock modules tables: ", false,
+           instance_id % _mysql.connections_count());
   _mysql.run_query(
            oss.str(),
            "SQL: could not clean modules table: ", false,
            instance_id % _mysql.connections_count());
 
+  // Cancellation of downtimes.
+  logging::debug(logging::low)
+    << "SQL: Cancellation of downtimes (instance_id:"
+    << instance_id << ")";
   oss.str("");
   oss << "UPDATE downtimes AS d"
          " INNER JOIN hosts AS h"
-         "  ON d.host_id=h.host_id"
+         " ON d.host_id=h.host_id"
          " SET d.cancelled=1"
          " WHERE d.actual_end_time IS NULL"
-         "  AND d.cancelled=0"
-         "  AND h.instance_id=" << instance_id;
+         " AND d.cancelled=0"
+         " AND h.instance_id=" << instance_id;
+  _mysql.run_query(
+           "LOCK TABLES downtimes AS d WRITE, hosts AS h READ",
+           "SQL: could not lock downtimes or hosts table: ", false,
+           instance_id % _mysql.connections_count());
   _mysql.run_query(
            oss.str(),
            "SQL: could not clean downtimes table: ", false,
@@ -315,14 +365,21 @@ void stream::_clean_tables(unsigned int instance_id) {
 
   // Remove comments.
   if (db_v2) {
+    logging::debug(logging::low)
+      << "SQL: remove comments (instance_id:"
+      << instance_id << ")";
     oss.str("");
     oss << "UPDATE comments AS c"
            " JOIN hosts AS h"
-           "  ON c.host_id=h.host_id"
+           " ON c.host_id=h.host_id"
            " SET c.deletion_time=" << time(NULL)
         << " WHERE h.instance_id=" << instance_id
-        << "  AND c.persistent=0"
-           "  AND (c.deletion_time IS NULL OR c.deletion_time=0)";
+        << " AND c.persistent=0"
+           " AND (c.deletion_time IS NULL OR c.deletion_time=0)";
+    _mysql.run_query(
+             "LOCK TABLES comments AS c WRITE, hosts AS h READ",
+             "SQL: could not lock comments or hosts table: ", false,
+             instance_id % _mysql.connections_count());
     _mysql.run_query(
              oss.str(),
              "SQL: could not clean comments table: ", false,
@@ -331,6 +388,9 @@ void stream::_clean_tables(unsigned int instance_id) {
 
   // Remove custom variables. No need to choose the good instance, there are
   // no constraint between custom variables and instances.
+  logging::debug(logging::low)
+    << "SQL: remove custom variables (instance_id:"
+    << instance_id << ")";
   oss.str("");
   oss << "DELETE cv"
       << " FROM " << (db_v2
@@ -342,11 +402,18 @@ void stream::_clean_tables(unsigned int instance_id) {
          " WHERE h.instance_id=" << instance_id;
 
   _mysql.run_query(
+           "LOCK TABLES customvariables AS cv WRITE, hosts AS h READ",
+           "SQL: could not lock customvariables, hosts tables: ", false,
+           instance_id % _mysql.connections_count());
+  _mysql.run_query(
            oss.str(),
            "SQL: could not clean custom variables table: ", false,
            instance_id % _mysql.connections_count());
-  // This is just to wait the deletions to finish
-  _mysql.commit();
+  _mysql.run_query(
+           "UNLOCK TABLES",
+           "SQL: could not unlock tables: ", false,
+           instance_id % _mysql.connections_count());
+  _mysql.commit(instance_id % _mysql.connections_count());
 }
 
 /**
