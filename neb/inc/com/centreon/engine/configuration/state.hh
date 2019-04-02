@@ -1,5 +1,5 @@
 /*
-** Copyright 2011-2016 Centreon
+** Copyright 2011-2017 Centreon
 **
 ** This file is part of Centreon Engine.
 **
@@ -236,6 +236,8 @@ namespace               configuration {
     set_host::const_iterator
                         hosts_find(host::key_type const& k) const;
     set_host::iterator  hosts_find(host::key_type const& k);
+    set_host::const_iterator
+                        hosts_find(std::string const& name) const;
     unsigned int        host_check_timeout() const throw ();
     void                host_check_timeout(unsigned int value);
     unsigned int        host_freshness_check_interval() const throw ();
@@ -268,8 +270,6 @@ namespace               configuration {
     void                log_file(std::string const& value);
     bool                log_host_retries() const throw ();
     void                log_host_retries(bool value);
-    bool                log_initial_states() const throw ();
-    void                log_initial_states(bool value);
     bool                log_notifications() const throw ();
     void                log_notifications(bool value);
     bool                log_passive_checks() const throw ();
@@ -450,6 +450,7 @@ namespace               configuration {
     void                _set_host_perfdata_file_mode(std::string const& value);
     void                _set_lock_file(std::string const& value);
     void                _set_log_archive_path(std::string const& value);
+    void                _set_log_initial_states(std::string const& value);
     void                _set_log_rotation_method(std::string const& value);
     void                _set_nagios_group(std::string const& value);
     void                _set_nagios_user(std::string const& value);
@@ -571,7 +572,6 @@ namespace               configuration {
     bool                _log_external_commands;
     std::string         _log_file;
     bool                _log_host_retries;
-    bool                _log_initial_states;
     bool                _log_notifications;
     bool                _log_passive_checks;
     bool                _log_pid;
