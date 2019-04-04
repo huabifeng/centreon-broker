@@ -16,6 +16,7 @@ local step = {
   require('neb.hostgroups'),
   require('neb.hostgroup_members'),
   require('neb.custom_variables'),
+  require('neb.custom_variable_status'),
   require('neb.comments'),
   require('neb.services'),
   require('neb.servicegroups'),
@@ -25,6 +26,7 @@ local step = {
   require('neb.host_checks'),
   require('neb.host_status'),
   require('neb.acknowledgements'),
+  require('neb.event_handler'),
   require('bam.truncate'),
   require('neb.finish'),
 }
@@ -59,34 +61,41 @@ step[5].count = {
   instance = step[1].count.instance
 }
 
--- Comments per host
+-- Custom variables status per host  =>
 step[6].count = {
+  cv = 30,
+  host = step[2].count.host,
+  instance = step[1].count.instance
+}
+
+-- Comments per host
+step[7].count = {
   comment = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
 }
 
 -- Services per host          => 20
-step[7].count = {
+step[8].count = {
   service = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
 }
 
 -- Servicegroups
-step[8].count = {
+step[9].count = {
   servicegroup = 20,
 }
 
 -- Service checks
-step[9].count = {
+step[10].count = {
   service = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
 }
 
 -- Services per host          => 20
-step[10].count = {
+step[11].count = {
   service = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
@@ -94,31 +103,38 @@ step[10].count = {
 }
 
 -- Downtimes per host
-step[11].count = {
+step[12].count = {
   host = 5,
 }
 
 -- Host checks and logs per instance
-step[12].count = {
-  host = step[2].count.host,
-  instance = step[1].count.instance
-}
-
--- Host status
 step[13].count = {
   host = step[2].count.host,
   instance = step[1].count.instance
 }
 
--- Acknowledgements
+-- Host status
 step[14].count = {
+  host = step[2].count.host,
+  instance = step[1].count.instance
+}
+
+-- Acknowledgements
+step[15].count = {
+  service = 50,
+  host = step[2].count.host,
+  instance = step[2].count.instance,
+}
+
+-- Event handlers
+step[16].count = {
   service = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
 }
 
 -- Table truncate signal
-step[15].count = {
+step[17].count = {
   update_started = true,
 }
 
