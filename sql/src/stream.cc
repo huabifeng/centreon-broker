@@ -355,7 +355,7 @@ void stream::_clean_tables(unsigned int instance_id) {
          " AND d.cancelled=0"
          " AND h.instance_id=" << instance_id;
   _mysql.run_query(
-           "LOCK TABLES downtimes AS d WRITE, hosts AS h READ",
+           "LOCK TABLES downtimes AS d WRITE, hosts AS h WRITE",
            "SQL: could not lock downtimes or hosts table: ", false,
            instance_id % _mysql.connections_count());
   _mysql.run_query(
@@ -377,7 +377,7 @@ void stream::_clean_tables(unsigned int instance_id) {
         << " AND c.persistent=0"
            " AND (c.deletion_time IS NULL OR c.deletion_time=0)";
     _mysql.run_query(
-             "LOCK TABLES comments AS c WRITE, hosts AS h READ",
+             "LOCK TABLES comments AS c WRITE, hosts AS h WRITE",
              "SQL: could not lock comments or hosts table: ", false,
              instance_id % _mysql.connections_count());
     _mysql.run_query(
@@ -2437,8 +2437,8 @@ stream::~stream() {
   // Stop cleanup thread.
   _cleanup_thread.exit();
   _cleanup_thread.wait(-1);
-  logging::error(logging::medium)
-    << "SQL: ~stream";
+  logging::debug(logging::low)
+    << "SQL: sql stream is closed.";
   mysql_manager::instance().clear();
 }
 

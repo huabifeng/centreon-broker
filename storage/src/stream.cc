@@ -131,8 +131,8 @@ stream::stream(
  */
 stream::~stream() {
   mysql_manager::instance().clear();
-  logging::error(logging::medium)
-    << "storage: ~stream";
+  logging::debug(logging::low)
+    << "storage: stream closed.";
 }
 
 /**
