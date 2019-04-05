@@ -581,23 +581,17 @@ void reporting_stream::_prepare() {
           "  VALUES (?, ?, ?)";
   _dimension_ba_timeperiod_insert = _mysql.prepare_query(query);
 
-/*  TODO SGA
   _dimension_truncate_tables.clear();
   query = "DELETE FROM mod_bam_reporting_kpi";
-  _dimension_truncate_tables.push_back(mysql_stmt(query, true));
-  _mysql.prepare_statement(_dimension_truncate_tables.back());
+  _dimension_truncate_tables.push_back(_mysql.prepare_query(query));
   query = "DELETE FROM mod_bam_reporting_relations_ba_bv";
-  _dimension_truncate_tables.push_back(mysql_stmt(query, true));
-  _mysql.prepare_statement(_dimension_truncate_tables.back());
+  _dimension_truncate_tables.push_back(_mysql.prepare_query(query));
   query = "DELETE FROM mod_bam_reporting_ba";
-  _dimension_truncate_tables.push_back(mysql_stmt(query, true));
-  _mysql.prepare_statement(_dimension_truncate_tables.back());
+  _dimension_truncate_tables.push_back(_mysql.prepare_query(query));
   query = "DELETE FROM mod_bam_reporting_bv";
-  _dimension_truncate_tables.push_back(mysql_stmt(query, true));
-  _mysql.prepare_statement(_dimension_truncate_tables.back());
-  _dimension_truncate_tables = _mysql.prepare_query(query);
+  _dimension_truncate_tables.push_back(_mysql.prepare_query(query));
   query = "DELETE FROM mod_bam_reporting_timeperiods";
-  _dimension_truncate_tables = _mysql.prepare_query(query);*/
+  _dimension_truncate_tables.push_back(_mysql.prepare_query(query));
 
   // Dimension KPI insertion
   query = "INSERT INTO mod_bam_reporting_kpi (kpi_id, kpi_name,"
