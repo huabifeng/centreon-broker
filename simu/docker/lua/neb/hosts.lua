@@ -92,6 +92,7 @@ local hosts = {
   --
   -- return: a neb::instance event
   build = function (stack, count)
+    print("BUILD HOST")
     local host_count = count.host
     local poller_count = count.instance
     broker_log:info(0, "BUILD HOSTS ; host_count = " .. host_count .. " ; poller_count = " .. poller_count)
@@ -103,6 +104,7 @@ local hosts = {
       end
     end
     broker_log:info(0, "BUILD HOSTS => FINISHED")
+    return true
   end,
 
   check = function (conn, count)

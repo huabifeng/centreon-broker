@@ -290,11 +290,11 @@ bool luabinding::_parse_event(std::shared_ptr<io::data>& d) {
     }
     else
       throw exceptions::msg() << "simu: cannot create object of ID "
-                          << map["type"].toInt() << " whereas it has been registered";
+                          << map["_type"].toInt() << " whereas it has been registered";
   }
   else {
     logging::info(logging::high)
-      << "simu: cannot unserialize event of ID " << map["type"].toInt()
+      << "simu: cannot unserialize event of ID " << map["_type"].toInt()
       << ": event was not registered and will therefore be ignored";
     retval = false;
   }

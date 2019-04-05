@@ -15,6 +15,7 @@ local finish = {
 
   build = function ()
     broker_log:info(0, "Time to finish...")
+    return false
   end
 }
 

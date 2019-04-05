@@ -7,12 +7,15 @@ local simu = {
   poller_count = 1,
   conn = nil,
   stack = {},
-  step = 1,
+  step_build = 0,
+  step_check = 1,
+  cont = true,
 }
 
 local step = {
   require('neb.instances'),
   require('neb.hosts'),
+  require('neb.finish'),
   require('neb.hostgroups'),
   require('neb.hostgroup_members'),
   require('neb.custom_variables'),
@@ -28,7 +31,6 @@ local step = {
   require('neb.acknowledgements'),
   require('neb.event_handler'),
   require('bam.truncate'),
-  require('neb.finish'),
 }
 
 -- Instances                  => 18
@@ -152,7 +154,7 @@ end
 function init(conf)
   math.randomseed(os.time())
   os.remove("/tmp/simu.log")
-  broker_log:set_parameters(0, simu.log_file)
+  broker_log:set_parameters(2, simu.log_file)
   local env = mysql.mysql()
   simu.conn = env:connect('centreon_storage', conf['login'], conf['password'], conf['db_addr'], 3306)
   if not simu.conn then
@@ -166,33 +168,36 @@ function init(conf)
 end
 
 function read()
-  if #simu.stack == 0 then
-    if not simu.started then
-      print("=> " .. step[simu.step].name)
-      broker_log:info(0, "Step " .. simu.step)
-      if step[simu.step] then
-        broker_log:info(1, "First build")
-        step[simu.step].build(simu.stack, step[simu.step].count)
-        simu.started = true
-      end
-    else
-      -- Check of instance in db
-      if step[simu.step].check(simu.conn, step[simu.step].count) then
-        simu.step = simu.step + 1
-        print("=> " .. step[simu.step].name)
-        broker_log:info(0, "Step " .. simu.step)
-        if step[simu.step] then
-          step[simu.step].build(simu.stack, step[simu.step].count)
-        end
-      end
+  print("READ stack = " .. #simu.stack .. " cont = " .. tostring(simu.cont) .. " ; step_build = " .. simu.step_build .. " step_check = " .. simu.step_check)
+  if simu.cont and #simu.stack == 0 then
+    simu.step_build = simu.step_build + 1
+
+    -- Building step in db
+    if step[simu.step_build] then
+      broker_log:info(0, "Build Step " .. simu.step_build)
+      print("BUILD " .. step[simu.step_build].name)
+      simu.cont = step[simu.step_build].build(simu.stack, step[simu.step_build].count)
+      print("   cont = " .. tostring(simu.cont))
+      print("   stack size " .. #simu.stack)
     end
   end
 
+  -- Check of step in db
+  if simu.step_check < simu.step_build or not simu.cont then
+    print("CHECK " .. step[simu.step_check].name .. "...")
+    if step[simu.step_check].check(simu.conn, step[simu.step_check].count) then
+      print("CHECK " .. step[simu.step_check].name .. " DONE")
+      simu.step_check = simu.step_check + 1
+      broker_log:info(0, "Check Step " .. simu.step_check)
+    end
+  end
+
+  -- Need to pop elemnts from the stack
   if #simu.stack > 0 then
     if #simu.stack % 100 == 0 then
       broker_log:info(0, "Stack contains " .. #simu.stack .. " elements")
     end
-    broker_log:info(2, broker.json_encode(simu.stack[1]))
+    broker_log:info(2, "EVENT SEND: " .. broker.json_encode(simu.stack[1]))
     return table.remove(simu.stack, 1)
   end
   return nil
