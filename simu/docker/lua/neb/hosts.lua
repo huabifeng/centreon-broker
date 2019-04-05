@@ -104,7 +104,6 @@ local hosts = {
       end
     end
     broker_log:info(0, "BUILD HOSTS => FINISHED")
-    return true
   end,
 
   check = function (conn, count)

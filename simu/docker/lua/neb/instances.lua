@@ -42,7 +42,6 @@ local instances = {
               stack,
               build(i, "Central_" .. i, "Centreon Engine " .. i, 600 + i))
     end
-    return true
   end,
   check = function (conn, count)
     local poller_count = count.instance

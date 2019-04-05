@@ -7,15 +7,13 @@ local simu = {
   poller_count = 1,
   conn = nil,
   stack = {},
-  step_build = 0,
+  step_build = 1,
   step_check = 1,
-  cont = true,
 }
 
 local step = {
   require('neb.instances'),
   require('neb.hosts'),
-  require('neb.finish'),
   require('neb.hostgroups'),
   require('neb.hostgroup_members'),
   require('neb.custom_variables'),
@@ -35,18 +33,21 @@ local step = {
 
 -- Instances                  => 18
 step[1].count = {
-  instance = 2
+  instance = 2,
+  continue = true,
 }
 
 -- Hosts per instance         => 312
 step[2].count = {
   host = 10,
-  instance = step[1].count.instance
+  instance = step[1].count.instance,
+  continue = true,
 }
 
 -- Hostgroups
 step[3].count = {
   group = 10,
+  continue = true,
 }
 
 -- Hostgroups members
@@ -54,20 +55,23 @@ step[4].count = {
   host = step[2].count.host,
   instance = step[2].count.instance,
   hostgroup = 1,
+  continue = true,
 }
 
 -- Custom variables per host  =>
 step[5].count = {
   cv = 30,
   host = step[2].count.host,
-  instance = step[1].count.instance
+  instance = step[1].count.instance,
+  continue = true,
 }
 
 -- Custom variables status per host  =>
 step[6].count = {
   cv = 30,
   host = step[2].count.host,
-  instance = step[1].count.instance
+  instance = step[1].count.instance,
+  continue = true,
 }
 
 -- Comments per host
@@ -75,6 +79,7 @@ step[7].count = {
   comment = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
+  continue = true,
 }
 
 -- Services per host          => 20
@@ -82,11 +87,13 @@ step[8].count = {
   service = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
+  continue = true,
 }
 
 -- Servicegroups
 step[9].count = {
   servicegroup = 20,
+  continue = true,
 }
 
 -- Service checks
@@ -94,6 +101,7 @@ step[10].count = {
   service = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
+  continue = true,
 }
 
 -- Services per host          => 20
@@ -102,23 +110,27 @@ step[11].count = {
   host = step[2].count.host,
   instance = step[2].count.instance,
   metric = 10,
+  continue = true,
 }
 
 -- Downtimes per host
 step[12].count = {
   host = 5,
+  continue = true,
 }
 
 -- Host checks and logs per instance
 step[13].count = {
   host = step[2].count.host,
-  instance = step[1].count.instance
+  instance = step[1].count.instance,
+  continue = true,
 }
 
 -- Host status
 step[14].count = {
   host = step[2].count.host,
-  instance = step[1].count.instance
+  instance = step[1].count.instance,
+  continue = true,
 }
 
 -- Acknowledgements
@@ -126,6 +138,7 @@ step[15].count = {
   service = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
+  continue = true,
 }
 
 -- Event handlers
@@ -133,11 +146,13 @@ step[16].count = {
   service = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
+  continue = true,
 }
 
 -- Table truncate signal
 step[17].count = {
   update_started = true,
+  continue = false,
 }
 
 function os.capture(cmd, raw)
@@ -154,7 +169,7 @@ end
 function init(conf)
   math.randomseed(os.time())
   os.remove("/tmp/simu.log")
-  broker_log:set_parameters(2, simu.log_file)
+  broker_log:set_parameters(3, simu.log_file)
   local env = mysql.mysql()
   simu.conn = env:connect('centreon_storage', conf['login'], conf['password'], conf['db_addr'], 3306)
   if not simu.conn then
@@ -168,25 +183,29 @@ function init(conf)
 end
 
 function read()
-  print("READ stack = " .. #simu.stack .. " cont = " .. tostring(simu.cont) .. " ; step_build = " .. simu.step_build .. " step_check = " .. simu.step_check)
-  if simu.cont and #simu.stack == 0 then
-    simu.step_build = simu.step_build + 1
-
+  if (simu.step_build == 1 or (simu.step_build > 1 and step[simu.step_build - 1].count.continue)) and #simu.stack == 0 then
     -- Building step in db
     if step[simu.step_build] then
       broker_log:info(0, "Build Step " .. simu.step_build)
       print("BUILD " .. step[simu.step_build].name)
-      simu.cont = step[simu.step_build].build(simu.stack, step[simu.step_build].count)
-      print("   cont = " .. tostring(simu.cont))
+      step[simu.step_build].build(simu.stack, step[simu.step_build].count)
       print("   stack size " .. #simu.stack)
+      simu.step_build = simu.step_build + 1
     end
   end
 
   -- Check of step in db
-  if simu.step_check < simu.step_build or not simu.cont then
-    print("CHECK " .. step[simu.step_check].name .. "...")
+  if simu.step_check < simu.step_build or not step[simu.step_check].count.continue then
     if step[simu.step_check].check(simu.conn, step[simu.step_check].count) then
       print("CHECK " .. step[simu.step_check].name .. " DONE")
+      if not step[simu.step_check].count.continue then
+        broker_log:info(0, "No more step")
+        local output = os.capture("ps ax | grep \"\\<cbd\\>\" | grep -v grep | awk '{print $1}' ", 1)
+        if output ~= "" then
+          broker_log:info(0, "SEND COMMAND: kill " .. output)
+          os.execute("kill -9 " .. output)
+        end
+      end
       simu.step_check = simu.step_check + 1
       broker_log:info(0, "Check Step " .. simu.step_check)
     end
