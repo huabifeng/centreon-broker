@@ -184,15 +184,23 @@ function init(conf)
   os.remove("/tmp/simu.log")
   broker_log:set_parameters(3, simu.log_file)
   local env = mysql.mysql()
-  simu.conn = env:connect('centreon_storage', conf['login'], conf['password'], conf['db_addr'], 3306)
-  if not simu.conn then
+  simu.conn = {}
+  simu.conn["storage"] = env:connect('centreon_storage', conf['login'], conf['password'], conf['db_addr'], 3306)
+  if not simu.conn["storage"] then
     broker_log:error(0, "No connection to database")
     error("No connection to database")
   end
 
+  simu.conn["cfg"] = env:connect('centreon', conf['login'], conf['password'], conf['db_addr'], 3306)
+  if not simu.conn["cfg"] then
+    broker_log:error(0, "No connection to cfg database")
+    error("No connection to cfg database")
+  end
+
   -- Some clean up
-  local cursor, error_str = simu.conn:execute("DELETE FROM data_bin;")
-  cursor, error_str = simu.conn:execute("DELETE FROM metrics;")
+  local cursor, error_str = simu.conn["storage"]:execute("DELETE FROM data_bin;")
+  cursor, error_str = simu.conn["storage"]:execute("DELETE FROM metrics;")
+  cursor, error_str = simu.conn["cfg"]:execute("DELETE FROM mod_bam;")
 end
 
 function read()

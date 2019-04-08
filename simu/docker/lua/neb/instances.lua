@@ -47,7 +47,7 @@ local instances = {
     local poller_count = count.instance
     broker_log:info(0, "CHECK INSTANCES with poller_count = " .. poller_count)
     local retval = true
-    local cursor, error_str = conn:execute([[SELECT instance_id, name from instances ORDER BY instance_id]])
+    local cursor, error_str = conn["storage"]:execute([[SELECT instance_id, name from instances ORDER BY instance_id]])
     local row = cursor:fetch({}, "a")
     local id = 1
     while row do

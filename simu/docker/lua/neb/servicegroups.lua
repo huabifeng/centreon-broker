@@ -33,7 +33,7 @@ local servicegroups = {
     local now = os.time()
     broker_log:info(0, "CHECK SERVICEGROUPS")
     local retval = true
-    local cursor, error_str = conn:execute([[SELECT servicegroup_id, name from servicegroups ORDER BY servicegroup_id]])
+    local cursor, error_str = conn["storage"]:execute([[SELECT servicegroup_id, name from servicegroups ORDER BY servicegroup_id]])
     local row = cursor:fetch({}, "a")
     local id = 1
     while row do

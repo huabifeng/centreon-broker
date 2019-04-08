@@ -60,7 +60,7 @@ local event_handler = {
     broker_log:info(0, "CHECK EVENT HANDLER")
     local retval = true
     broker_log:info(0, "SELECT count(*) from eventhandlers where start_time>=" .. now .. " and start_time <= " .. now_max)
-    local cursor, error_str = conn:execute("SELECT count(*) from eventhandlers where start_time >=" .. now .. " and start_time <= " .. now_max)
+    local cursor, error_str = conn["storage"]:execute("SELECT count(*) from eventhandlers where start_time >=" .. now .. " and start_time <= " .. now_max)
     local row = cursor:fetch({}, "a")
     if row then
       if tonumber(row['count(*)']) ~= service_count * host_count then

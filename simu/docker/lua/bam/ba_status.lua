@@ -31,7 +31,7 @@ local ba_status = {
     local ba_count = count.ba
     broker_log:info(0, "CHECK BA STATUS")
     local retval = true
-    local cursor, error_str = conn:execute("SELECT count(*) from mod_bam" )
+    local cursor, error_str = conn["cfg"]:execute("SELECT count(*) from mod_bam" )
     local row = cursor:fetch({}, "a")
 
     if tonumber(row['count(*)']) ~= ba_count then

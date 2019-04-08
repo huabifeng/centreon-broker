@@ -58,7 +58,7 @@ local downtimes = {
     local retval = true
     broker_log:info(3, "SELECT host_id FROM downtimes WHERE start_time = "
                                 .. data.start_time .. " ORDER BY host_id")
-    local cursor, error_str = conn:execute("SELECT host_id FROM downtimes WHERE start_time = "
+    local cursor, error_str = conn["storage"]:execute("SELECT host_id FROM downtimes WHERE start_time = "
                                 .. data.start_time .. " ORDER BY host_id")
     local row = cursor:fetch({}, "a")
     local id = 1

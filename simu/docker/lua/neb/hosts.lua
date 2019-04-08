@@ -112,7 +112,7 @@ local hosts = {
     local now = os.time()
     broker_log:info(0, "CHECK HOSTS")
     local retval = true
-    local cursor, error_str = conn:execute([[SELECT host_id, instance_id from hosts ORDER BY host_id]])
+    local cursor, error_str = conn["storage"]:execute([[SELECT host_id, instance_id from hosts ORDER BY host_id]])
     local row = cursor:fetch({}, "a")
     local id = 1
     local instance_id = 1

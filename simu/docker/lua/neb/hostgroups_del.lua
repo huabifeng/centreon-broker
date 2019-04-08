@@ -34,11 +34,11 @@ local hostgroups_del = {
     local now = os.time()
     broker_log:info(0, "CHECK HOSTGROUPS")
     local retval = true
-    local cursor, error_str = conn:execute([[SELECT count(hostgroup_id) from hostgroups]])
+    local cursor, error_str = conn["storage"]:execute([[SELECT count(hostgroup_id) from hostgroups]])
     local row = cursor:fetch({}, "a")
     while row do
       broker_log:info(0, "CHECK HOSTGROUPS DELETION => NOT FINISHED")
-      cursor, error_str = conn:execute([[SELECT count(hostgroup_id) from hostgroups]])
+      cursor, error_str = conn["storage"]:execute([[SELECT count(hostgroup_id) from hostgroups]])
       row = cursor:fetch({}, "a")
     end
 

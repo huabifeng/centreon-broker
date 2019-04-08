@@ -96,7 +96,7 @@ local service_status = {
     broker_log:info(0, "CHECK SERVICE STATUS")
     local retval = true
     broker_log:info(0, "SELECT count(*) from data_bin where ctime>=" .. now .. " and ctime <= " .. (now + count.metric))
-    local cursor, error_str = conn:execute("SELECT count(*) from data_bin where ctime >=" .. now .. " and ctime <= " .. (now + count.metric))
+    local cursor, error_str = conn["storage"]:execute("SELECT count(*) from data_bin where ctime >=" .. now .. " and ctime <= " .. (now + count.metric))
     local row = cursor:fetch({}, "a")
     if row then
       if tonumber(row['count(*)']) ~= 5 * service_count * host_count * count.metric then

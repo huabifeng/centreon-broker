@@ -63,7 +63,7 @@ local hosts = {
     local poller_count = count.instance
     broker_log:info(0, "CHECK HOSTS CHECKS")
     local retval = true
-    local cursor, error_str = conn:execute([[SELECT host_id, command_line from hosts ORDER BY host_id]])
+    local cursor, error_str = conn["storage"]:execute([[SELECT host_id, command_line from hosts ORDER BY host_id]])
     local row = cursor:fetch({}, "a")
     local id = 1
     local instance_id = 1
@@ -85,7 +85,7 @@ local hosts = {
 
     broker_log:info(0, "CHECK HOSTS LOGS")
     local retval = true
-    local cursor, error_str = conn:execute([[SELECT host_id,output from logs WHERE ctime = ]] .. data.now .. " ORDER BY host_id")
+    local cursor, error_str = conn["storage"]:execute([[SELECT host_id,output from logs WHERE ctime = ]] .. data.now .. " ORDER BY host_id")
     local row = cursor:fetch({}, "a")
     local id = 1
     local instance_id = 1

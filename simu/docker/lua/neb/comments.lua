@@ -52,7 +52,7 @@ local comments = {
     local now = os.time()
     broker_log:info(0, "CHECK COMMENTS with internal_id = " .. _comments.internal_id)
     local retval = true
-    local cursor, error_str = conn:execute("SELECT count(*) from comments where internal_id=" .. _comments.internal_id)
+    local cursor, error_str = conn["storage"]:execute("SELECT count(*) from comments where internal_id=" .. _comments.internal_id)
     local row = cursor:fetch({}, "a")
 
     if tonumber(row['count(*)']) ~= host_count * instance_count * count.comment then

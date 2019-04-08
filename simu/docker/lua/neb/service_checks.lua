@@ -40,7 +40,7 @@ local service_checks = {
     broker_log:info(0, "CHECK SERVICES CHECKS")
     local service_count = count.service
     local host_count = count.host * count.instance
-    local cursor, error_str = conn:execute([[SELECT host_id, service_id, command_line from services ORDER BY host_id, service_id]])
+    local cursor, error_str = conn["storage"]:execute([[SELECT host_id, service_id, command_line from services ORDER BY host_id, service_id]])
     local retval = true
     for j = 1,host_count do
       for i = 1,service_count do

@@ -73,7 +73,7 @@ local host_status = {
     broker_log:info(0, "CHECK HOST STATUS")
     local retval = true
     broker_log:info(0, "SELECT count(*) from hosts where last_check=" .. now)
-    local cursor, error_str = conn:execute(
+    local cursor, error_str = conn["storage"]:execute(
         "SELECT count(*) from hosts where last_check=" .. now)
     local row = cursor:fetch({}, "a")
     if row then

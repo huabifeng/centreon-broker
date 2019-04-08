@@ -33,7 +33,7 @@ local hostgroups = {
     local now = os.time()
     broker_log:info(0, "CHECK HOSTGROUPS")
     local retval = true
-    local cursor, error_str = conn:execute([[SELECT hostgroup_id, name from hostgroups ORDER BY hostgroup_id]])
+    local cursor, error_str = conn["storage"]:execute([[SELECT hostgroup_id, name from hostgroups ORDER BY hostgroup_id]])
     local row = cursor:fetch({}, "a")
     local id = 1
     while row do

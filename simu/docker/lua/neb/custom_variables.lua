@@ -37,7 +37,7 @@ local custom_variables = {
     local now = os.time()
     broker_log:info(0, "CHECK CUSTOM VARIABLES")
     local retval = true
-    local cursor, error_str = conn:execute([[SELECT host_id, name, value from customvariables WHERE type=1 ORDER BY host_id]])
+    local cursor, error_str = conn["storage"]:execute([[SELECT host_id, name, value from customvariables WHERE type=1 ORDER BY host_id]])
     local row = cursor:fetch({}, "a")
     local count = 0
     while row do
