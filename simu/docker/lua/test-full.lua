@@ -33,7 +33,8 @@ local step = {
   require('neb.host_status'),
   require('neb.acknowledgements'),
   require('neb.event_handler'),
-  require('bam.truncate'),
+  require('bam.ba_status'),
+  require('bam.dimension_truncate_table_signal'),
 }
 
 -- Instances                  => 18
@@ -154,8 +155,15 @@ step[16].count = {
   continue = true,
 }
 
--- Table truncate signal
+-- Ba status
 step[17].count = {
+  ba = 100,
+  update_started = true,
+  continue = true,
+}
+
+-- Table truncate signal
+step[18].count = {
   update_started = true,
   continue = false,
 }

@@ -1,4 +1,4 @@
-local function build(id, instance_id, name, address)
+ local function build(id, instance_id, name, address)
   local now = os.time()
   local retval = {
     _type = 393227,
