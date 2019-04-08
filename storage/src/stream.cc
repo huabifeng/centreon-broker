@@ -28,6 +28,8 @@
 #include "com/centreon/broker/logging/logging.hh"
 #include "com/centreon/broker/multiplexing/publisher.hh"
 #include "com/centreon/broker/mysql_manager.hh"
+#include "com/centreon/broker/neb/host.hh"
+#include "com/centreon/broker/neb/instance.hh"
 #include "com/centreon/broker/neb/internal.hh"
 #include "com/centreon/broker/neb/service.hh"
 #include "com/centreon/broker/neb/service_status.hh"
@@ -189,8 +191,74 @@ void stream::statistics(io::properties& tree) const {
 void stream::update() {
   _check_deleted_index();
   _rebuild_cache();
+  _host_instance_cache_create();
 }
 
+/**
+ * Create the cache to link host id to instance id.
+ */
+void stream::_host_instance_cache_create() {
+  _cache_host_instance.clear();
+  std::ostringstream oss;
+
+  std::promise<database::mysql_result> promise;
+  _mysql.run_query_and_get_result("SELECT host_id, instance_id FROM hosts",
+           &promise,
+           "SQL: could not get the list of host/instance pairs");
+  database::mysql_result res(promise.get_future().get());
+  while (_mysql.fetch_row(res))
+    _cache_host_instance[res.value_as_u32(0)] = res.value_as_u32(1);
+}
+
+void stream::_process_instance(
+               std::shared_ptr<io::data> const& e) {
+  // Cast object.
+  neb::instance const& i(*static_cast<neb::instance const*>(e.get()));
+
+  // Log message.
+  logging::info(logging::medium) << "SQL: processing poller event "
+    << "(id: " << i.poller_id << ", name: " << i.name << ", running: "
+    << (i.is_running ? "yes" : "no") << ")";
+
+  if (i.is_running) {
+    for (std::map<unsigned int, unsigned int>::iterator
+           it(_cache_host_instance.begin()),
+           end(_cache_host_instance.end());
+         it != end ; ) {
+      if (it->second == i.poller_id)
+        _cache_host_instance.erase(it++);
+      else
+        ++it;
+    }
+  }
+}
+
+/**
+ *  Process an host event.
+ *
+ *  @param[in] e Uncasted host.
+ */
+void stream::_process_host(
+               std::shared_ptr<io::data> const& e) {
+  // Cast object.
+  neb::host const& h(*static_cast<neb::host const*>(e.get()));
+
+  // Log message.
+  logging::info(logging::medium) << "storage: processing host event"
+       " (poller: " << h.poller_id << ", id: "
+    << h.host_id << ", name: " << h.host_name << ")";
+
+  // Processing
+  if (h.host_id) {
+    if (h.enabled)
+      _cache_host_instance[h.host_id] = h.poller_id;
+    else
+      _cache_host_instance.erase(h.host_id);
+  }
+  else
+    logging::error(logging::high) << "storage: host '" << h.host_name
+      << "' of poller " << h.poller_id << " has no ID";
+}
 /**
  *  Write an event.
  *
@@ -316,6 +384,10 @@ int stream::write(std::shared_ptr<io::data> const& data) {
       }
     }
   }
+  else if (data->type() == neb::instance::static_type())
+    _process_instance(data);
+  else if (data->type() == neb::host::static_type())
+    _process_host(data);
 
   // Event acknowledgement.
   logging::debug(logging::low)
@@ -558,7 +630,8 @@ unsigned int stream::_find_index_id(
       _mysql.run_statement(
                _update_index_data_stmt,
                "UPDATE index_data",
-               true);
+               true,
+               _cache_host_instance[host_id] % _mysql.connections_count());
       if (_mysql.commit_if_needed())
         _set_ack_events();
 
@@ -671,7 +744,7 @@ unsigned int stream::_find_index_id(
  */
 unsigned int stream::_find_metric_id(
                        unsigned int index_id,
-                       QString metric_name,
+                       QString const& metric_name,
                        QString const& unit_name,
                        double warn,
                        double warn_low,
@@ -687,15 +760,15 @@ unsigned int stream::_find_metric_id(
   unsigned int retval;
 
   // Trim metric_name.
-  metric_name = metric_name.trimmed();
+  QString mtc_name(metric_name.trimmed());
 
   // Look in the cache.
   std::map<std::pair<unsigned int, QString>, metric_info>::iterator
-    it(_metric_cache.find(std::make_pair(index_id, metric_name)));
+    it(_metric_cache.find(std::make_pair(index_id, mtc_name)));
   if (it != _metric_cache.end()) {
     logging::debug(logging::low) << "storage: found metric "
       << it->second.metric_id << " of (" << index_id << ", "
-      << metric_name << ") in cache";
+      << mtc_name << ") in cache";
     // Should we update metrics ?
     if ((check_double(it->second.value) != check_double(value))
         || (it->second.unit_name != unit_name)
@@ -709,7 +782,7 @@ unsigned int stream::_find_metric_id(
         || (check_double(it->second.max) != check_double(max))) {
       logging::info(logging::medium) << "storage: updating metric "
         << it->second.metric_id << " of (" << index_id << ", "
-        << metric_name << ") (unit: " << unit_name << ", warning: "
+        << mtc_name << ") (unit: " << unit_name << ", warning: "
         << warn_low << ":" << warn << ", critical: " << crit_low << ":"
         << crit << ", min: " << min << ", max: " << max << ")";
       // Update metrics table.
@@ -754,7 +827,7 @@ unsigned int stream::_find_metric_id(
   else {
     logging::debug(logging::low)
       << "storage: creating new metric for (" << index_id
-      << ", " << metric_name << ")";
+      << ", " << mtc_name << ")";
 
     // Database schema version.
     bool db_v2(_mysql.schema_version() == mysql::v2);
@@ -763,7 +836,7 @@ unsigned int stream::_find_metric_id(
     if (*type == perfdata::automatic)
       *type = perfdata::gauge;
     _insert_metrics_stmt.bind_value_as_i32(0, index_id);
-    _insert_metrics_stmt.bind_value_as_str(1, metric_name.toStdString());
+    _insert_metrics_stmt.bind_value_as_str(1, mtc_name.toStdString());
     _insert_metrics_stmt.bind_value_as_str(2, unit_name.toStdString());
     _insert_metrics_stmt.bind_value_as_f32(3, warn);
     _insert_metrics_stmt.bind_value_as_f32(4, warn_low);
@@ -782,7 +855,7 @@ unsigned int stream::_find_metric_id(
     // Execute query.
     std::ostringstream oss;
     oss << "storage: insertion of "
-           "metric '" << metric_name.toStdString() << "' of index " << index_id
+           "metric '" << mtc_name.toStdString() << "' of index " << index_id
         << " failed: ";
 
     std::promise<int> promise;
@@ -795,7 +868,7 @@ unsigned int stream::_find_metric_id(
 
     // Insert metric in cache.
     logging::info(logging::medium) << "storage: new metric "
-      << retval << " for (" << index_id << ", " << metric_name << ")";
+      << retval << " for (" << index_id << ", " << mtc_name << ")";
     metric_info info;
     info.locked = false;
     info.metric_id = retval;
@@ -810,7 +883,7 @@ unsigned int stream::_find_metric_id(
     info.crit_mode = crit_mode;
     info.min = min;
     info.max = max;
-    _metric_cache[std::make_pair(index_id, metric_name)] = info;
+    _metric_cache[std::make_pair(index_id, mtc_name)] = info;
 
     // Create the metric mapping.
     std::shared_ptr<metric_mapping> mm(new metric_mapping);

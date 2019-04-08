@@ -106,22 +106,25 @@ namespace          storage {
                      bool* locked);
     unsigned int   _find_metric_id(
                      unsigned int index_id,
-                     QString metric_name,
-		     QString const& unit_name,
-		     double warn,
+                     QString const& metric_name,
+		                 QString const& unit_name,
+		                 double warn,
                      double warn_low,
                      bool warn_mode,
-		     double crit,
+		                 double crit,
                      double crit_low,
                      bool crit_mode,
-		     double min,
-		     double max,
+		                 double min,
+		                 double max,
                      double value,
                      unsigned int* type,
                      bool* locked);
+    void           _host_instance_cache_create();
     void           _insert_perfdatas_new();
     void           _insert_perfdatas();
     void           _prepare();
+    void           _process_host(std::shared_ptr<io::data> const& e);
+    void           _process_instance(std::shared_ptr<io::data> const& e);
     void           _rebuild_cache();
     void           _update_status(std::string const& status);
     void            _set_ack_events();
@@ -136,6 +139,8 @@ namespace          storage {
                    _metric_cache;
     std::deque<metric_value>
                    _perfdata_queue;
+    std::map<unsigned int, unsigned int>
+                   _cache_host_instance;
     rebuilder      _rebuilder;
     unsigned int   _rrd_len;
     std::string    _status;
