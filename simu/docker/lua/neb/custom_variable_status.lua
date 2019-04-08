@@ -46,8 +46,8 @@ local custom_variable_status = {
       if tonumber(row.host_id) ~= host_id or not string.match(row.name, name) or not string.match(row.value, value) then
         broker_log:error(0, "Row found host_id = "
             .. row.host_id .. " name = " .. row.name
-            .. " value = " .. row.value
-            .. " does not match host_id = " .. host_id .. " and name = " .. name .. " and value = " .. value)
+            .. " value = " .. tostring(row.value)
+            .. " does not match host_id = " .. tostring(host_id) .. " and name = " .. tostring(name) .. " and value = " .. tostring(value))
         retval = false
         break
       end

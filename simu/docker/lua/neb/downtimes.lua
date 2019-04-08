@@ -3,18 +3,26 @@ local data = {
 
 local function build(id)
   local now = os.time()
-  data.start_time = now - 10
+  if not data.start_time then
+    data.start_time = now
+    data.end_time = now
+  end
+  if now > data.end_time then
+    data.end_time = now
+  end
+
   local retval = {
     category = 1,
     element = 5,
     _type = 65541,
-    actual_end_time = now + 500,
+    actual_end_time = data.end_time,
     actual_start_time = data.start_time,
     author = "admin",
     downtime_type = 2,
     duration = 500,
-    end_time = now + 500,
-    entry_time = now - 15 + id,
+    internal_id = id,
+    end_time = data.end_time,
+    entry_time = data.start_time,
     fixed = false,
     host_id = id,
     instance_id = 1,
@@ -48,6 +56,8 @@ local downtimes = {
     local now = os.time()
     broker_log:info(0, "CHECK DOWNTIMES")
     local retval = true
+    broker_log:info(3, "SELECT host_id FROM downtimes WHERE start_time = "
+                                .. data.start_time .. " ORDER BY host_id")
     local cursor, error_str = conn:execute("SELECT host_id FROM downtimes WHERE start_time = "
                                 .. data.start_time .. " ORDER BY host_id")
     local row = cursor:fetch({}, "a")
