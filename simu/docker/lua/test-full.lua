@@ -247,7 +247,7 @@ function read()
     -- Building step in db
     if step[simu.step_build] then
       broker_log:info(0, "Build Step " .. simu.step_build)
-      print(green .. "BUILD " .. reset .. step[simu.step_build].name)
+      print(green .. "BUILD step " .. simu.step_build .. " " .. reset .. step[simu.step_build].name)
       step[simu.step_build].build(simu.stack, step[simu.step_build].count, simu.conn)
       print("   stack size " .. #simu.stack)
       simu.step_build = simu.step_build + 1

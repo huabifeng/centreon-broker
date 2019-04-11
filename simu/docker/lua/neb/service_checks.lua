@@ -64,6 +64,9 @@ local service_checks = {
           break
         end
       end
+      if not retval then
+        break
+      end
     end
 
     if not retval then

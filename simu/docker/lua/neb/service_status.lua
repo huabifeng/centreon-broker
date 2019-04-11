@@ -1,11 +1,14 @@
 local _service_status = {}
 
 local function build(service_id, host_id, metric)
-  if not _service_status.now then
-    local now = os.time() - 5000
-    _service_status.now = os.time() - 5000
+  local now = os.time()
+  if not _service_status.start then
+    _service_status.start = now
+    _service_status.finish = now
   end
-  local now = _service_status.now + metric
+  if now > _service_status.finish then
+    _service_status.finish = now
+  end
   local info = "_" .. service_id .. "_" .. host_id
   local d1 = math.random(0, 100)
   local d2 = math.random(0, 100)
@@ -72,6 +75,7 @@ local service_status = {
   --
   -- return: a neb::instance event
   build = function (stack, count, conn)
+  print("BUILD BUILD")
     local metric_count = count.metric
     local service_count = count.service
     local host_count = count.host * count.instance
@@ -92,11 +96,15 @@ local service_status = {
   check = function (conn, count)
     local service_count = count.service
     local host_count = count.host * count.instance
-    local now = _service_status.now
+    local start = _service_status.start
+    if not start then
+      return false
+    end
+    local finish = _service_status.finish
     broker_log:info(0, "CHECK SERVICE STATUS")
     local retval = true
-    broker_log:info(0, "SELECT count(*) from data_bin where ctime>=" .. now .. " and ctime <= " .. (now + count.metric))
-    local cursor, error_str = conn["storage"]:execute("SELECT count(*) from data_bin where ctime >=" .. now .. " and ctime <= " .. (now + count.metric))
+    broker_log:info(0, "SELECT count(*) from data_bin where ctime>=" .. start .. " and ctime <= " .. finish)
+    local cursor, error_str = conn["storage"]:execute("SELECT count(*) from data_bin where ctime >=" .. start .. " and ctime <= " .. finish)
     local row = cursor:fetch({}, "a")
     if row then
       if tonumber(row['count(*)']) ~= 5 * service_count * host_count * count.metric then
