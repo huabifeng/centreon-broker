@@ -649,60 +649,6 @@ void reader_v2::_load_dimensions() {
       datas.push_back(std::static_pointer_cast<io::data>(tp));
     }
 
-    // // Load the timeperiod exceptions.
-    // q.run_query(
-    //   "SELECT timeperiod_id, days, timerange"
-    //   "  FROM timeperiod_exceptions",
-    //   "could not retrieve timeperiod exceptions from the database");
-    // while (q.next()) {
-    //   unsigned int timeperiod_id = q.value(0).toUInt();
-    //   std::map<unsigned int, time::timeperiod::ptr>::iterator found
-    //       = timeperiods.find(timeperiod_id);
-    //   if (found == timeperiods.end())
-    //     throw (reader_exception()
-    //            << "BAM: found a timeperiod exception pointing to an "
-    //            "inexisting timeperiod (timeperiod ID is " << timeperiod_id
-    //            << ")");
-    //   found->second->add_exception(
-    //                    q.value(1).toString().toStdString(),
-    //                    q.value(2).toString().toStdString());
-    //   std::shared_ptr<dimension_timeperiod_exception>
-    //     exception(new dimension_timeperiod_exception);
-    //   exception->timeperiod_id = timeperiod_id;
-    //   exception->daterange = q.value(1).toString();
-    //   exception->timerange = q.value(2).toString();
-    //   datas.push_back(exception.staticCast<io::data>());
-    // }
-
-    // // Load the excluded timeperiods.
-    // q.run_query(
-    //   "SELECT timeperiod_id, timeperiod_exclude_id"
-    //   "  FROM timeperiod_exclude_relations",
-    //   "could not retrieve timeperiod exclusions from the database");
-    // while (q.next()) {
-    //   unsigned int timeperiod_id = q.value(0).toUInt();
-    //   unsigned int timeperiod_exclude_id = q.value(1).toUInt();
-    //   std::map<unsigned int, time::timeperiod::ptr>::iterator found
-    //       = timeperiods.find(timeperiod_id);
-    //   if (found == timeperiods.end())
-    //     throw (reader_exception()
-    //            << "BAM: found a timeperiod exclude pointing to an inexisting "
-    //            "timeperiod (timeperiod has ID " << timeperiod_id << ")");
-    //   std::map<unsigned int, time::timeperiod::ptr>::iterator found_excluded =
-    //     timeperiods.find(timeperiod_exclude_id);
-    //   if (found_excluded == timeperiods.end())
-    //     throw (reader_exception()
-    //            << "BAM: found a timeperiod exclude pointing to an inexisting "
-    //               "excluded timeperiod (excluded timeperiod has ID "
-    //            << timeperiod_exclude_id << ")");
-    //   found->second->add_excluded(found_excluded->second);
-    //   std::shared_ptr<dimension_timeperiod_exclusion>
-    //     exclusion(new dimension_timeperiod_exclusion);
-    //   exclusion->timeperiod_id = timeperiod_id;
-    //   exclusion->excluded_timeperiod_id = timeperiod_exclude_id;
-    //   datas.push_back(exclusion.staticCast<io::data>());
-    // }
-
     // Load the BAs.
     std::ostringstream oss;
     oss << "SELECT b.ba_id, b.name, b.description,"
@@ -740,7 +686,6 @@ void reader_v2::_load_dimensions() {
         datas.push_back(dbtr);
       }
     }
-
     // Load the BVs.
     promise = std::promise<database::mysql_result>();
     _mysql.run_query_and_get_result(
@@ -757,7 +702,6 @@ void reader_v2::_load_dimensions() {
       bv->bv_description = res.value_as_str(2).c_str();
       datas.push_back(std::static_pointer_cast<io::data>(bv));
     }
-
     // Load the BA BV relations.
     {
       std::ostringstream oss;
@@ -774,8 +718,9 @@ void reader_v2::_load_dimensions() {
       _mysql.run_query_and_get_result(
                oss.str(), &promise,
                "could not retrieve BV memberships of BAs");
+      res = promise.get_future().get();
     }
-    res = promise.get_future().get();
+
     while (_mysql.fetch_row(res)) {
       std::shared_ptr<dimension_ba_bv_relation_event>
           babv(new dimension_ba_bv_relation_event);
@@ -783,7 +728,6 @@ void reader_v2::_load_dimensions() {
       babv->bv_id = res.value_as_u32(1);
       datas.push_back(std::static_pointer_cast<io::data>(babv));
     }
-
     // Load the KPIs
     // Unfortunately, we need to get the names of the
     // service/host/meta_service/ba/boolean expression associated with
@@ -830,8 +774,11 @@ void reader_v2::_load_dimensions() {
       _mysql.run_query_and_get_result(
                oss.str(), &promise,
                "could not retrieve KPI dimensions");
+
+      res = promise.get_future().get();
+
     }
-    res = promise.get_future().get();
+
     while (_mysql.fetch_row(res)) {
       std::shared_ptr<dimension_kpi_event> k(new dimension_kpi_event);
       k->kpi_id = res.value_as_u32(0);
