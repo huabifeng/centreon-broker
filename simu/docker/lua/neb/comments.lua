@@ -31,8 +31,12 @@ local comments = {
     local instance_count = count.instance
     broker_log:info(0, "BUILD COMMENTS ; host_count = " .. host_count .. " ; instance_count = " .. count.instance)
     local id = 1
-    math.randomseed(os.time())
-    _comments.internal_id = math.random(0, 10000)
+    if not _comments.internal_id then
+      math.randomseed(os.time())
+      _comments.internal_id = math.random(0, 10000)
+    else
+      _comments.internal_id = _comments.internal_id + 1
+    end
     for j = 1,instance_count do
       for i = 1,host_count do
         for k = 1,count.comment do

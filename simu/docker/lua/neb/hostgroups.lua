@@ -33,16 +33,15 @@ local hostgroups = {
     local now = os.time()
     broker_log:info(0, "CHECK HOSTGROUPS")
     local retval = true
-    local cursor, error_str = conn["storage"]:execute([[SELECT hostgroup_id, name from hostgroups ORDER BY hostgroup_id]])
+    local cursor, error_str = conn["storage"]:execute([[SELECT hostgroup_id from hostgroups ORDER BY hostgroup_id]])
     local row = cursor:fetch({}, "a")
     local id = 1
     while row do
-      local name = "hostgroup_" .. id
       broker_log:info(1, "Check for hostgroup " .. id)
-      if tonumber(row.hostgroup_id) ~= id or row.name ~= name then
+      if tonumber(row.hostgroup_id) ~= id then
         broker_log:error(0, "Row found hostgroup_id = "
-            .. row.hostgroup_id .. " name = " .. row.name
-            .. " instead of hostgroup_id = " .. id .. " and name = " .. name)
+            .. row.hostgroup_id
+            .. " instead of hostgroup_id = " .. id)
         retval = false
         break
       end

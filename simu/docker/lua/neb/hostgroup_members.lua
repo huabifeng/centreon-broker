@@ -23,14 +23,17 @@ local hostgroup_members = {
     local hostgroup_count = count.hostgroup
     local instance_id = 1
     broker_log:info(0, "BUILD HOST GROUPS MEMBERS " .. host_count .. " ; " .. hostgroup_count)
+    local hg = 1
     for j = 1,host_count do
-      for i = 1,hostgroup_count do
-        table.insert(
-                stack,
-                build(i, j, instance_id))
-        if j % count.host == 0 then
-          instance_id = instance_id + 1
-        end
+      table.insert(
+              stack,
+              build(hg, j, instance_id))
+      if j % count.host == 0 then
+        instance_id = instance_id + 1
+      end
+      hg = hg + 1
+      if hg > hostgroup_count then
+        hg = 1
       end
     end
     broker_log:info(0, "BUILD HOST GROUPS MEMBERS => FINISHED")
@@ -49,7 +52,6 @@ local hostgroup_members = {
     local cnt = 0
     while row do
       cnt = cnt + 1
-      broker_log:info(0, "COUCOU")
       if tonumber(row.hostgroup_id) ~= group_id or tonumber(row.host_id) ~= host_id then
         broker_log:error(0, "Row found hostgroup_id = "
             .. row.hostgroup_id .. " host_id = " .. row.host_id
@@ -60,7 +62,10 @@ local hostgroup_members = {
       host_id = host_id + 1
       if host_id > host_count then
         host_id = 1
-        group_id = group_id + 1
+      end
+      group_id = group_id + 1
+      if group_id > hostgroup_count then
+        group_id = 1
       end
       row = cursor:fetch({}, "a")
       --os.sleep(1)

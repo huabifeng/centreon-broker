@@ -78,7 +78,7 @@ local host_status = {
     local row = cursor:fetch({}, "a")
     if row then
       if tonumber(row['count(*)']) ~= host_count then
-        broker_log:error(0, "hosts not completely updated")
+        broker_log:error(0, "We should have a result equal to " .. host_count)
         retval = false
       end
     end

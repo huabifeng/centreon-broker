@@ -53,7 +53,6 @@ local downtimes = {
 
   check = function (conn, count)
     local downtime_count = count.host
-    local now = os.time()
     broker_log:info(0, "CHECK DOWNTIMES")
     local retval = true
     broker_log:info(3, "SELECT host_id FROM downtimes WHERE start_time = "

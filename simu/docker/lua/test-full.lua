@@ -4,6 +4,7 @@ local mysql = require "luasql.mysql"
 local blue = string.char(27) .. "[34m"
 local red = string.char(27) .. "[31m"
 local green = string.char(27) .. "[32m"
+local yellow = string.char(27) .. "[33m"
 local reset = string.char(27) .. "[0m"
 
 local simu = {
@@ -56,12 +57,12 @@ step[3].count = {
   group = 10,
   continue = true,
 }
---
+
 -- Hostgroups members
 step[4].count = {
   host = step[2].count.host,
   instance = step[2].count.instance,
-  hostgroup = 1,
+  hostgroup = 10,
   continue = true,
 }
 
@@ -116,7 +117,7 @@ step[11].count = {
   service = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
-  metric = 10,
+  metric = 1,
   continue = true,
 }
 
@@ -187,6 +188,33 @@ function os.capture(cmd, raw)
   return s
 end
 
+function clean_tables()
+  local queries = {
+    -- This table can grow up quickly, so we clean it
+    { "storage", "DELETE FROM data_bin" },
+    { "storage", "DELETE FROM metrics" },
+    -- We want hostgroups to be rebuilt entirely
+    { "storage", "DELETE FROM hostgroups" },
+    -- We delete custom variables
+    { "storage", "DELETE FROM customvariables" },
+    -- We delete comments
+    { "storage", "DELETE FROM comments" },
+    -- We want hostgroups without hosts associated
+    { "storage", "INSERT INTO hostgroups (name) VALUES ('hostgroup_12')" },
+    { "storage", "INSERT INTO hostgroups (name) VALUES ('hostgroup_13')" },
+    { "storage", "INSERT INTO hostgroups (name) VALUES ('hostgroup_14')" },
+    { "storage", "INSERT INTO hostgroups (name) VALUES ('hostgroup_15')" },
+    --{ "cfg", "DELETE FROM mod_bam" },
+  }
+
+  for _,l in ipairs(queries) do
+    local cursor, error_str = simu.conn[l[1]]:execute(l[2])
+    if error_str then
+      error(error_str)
+    end
+  end
+end
+
 function init(conf)
   math.randomseed(os.time())
   os.remove("/tmp/simu.log")
@@ -206,10 +234,8 @@ function init(conf)
   end
 
   -- Some clean up
-  local cursor, error_str = simu.conn["storage"]:execute("DELETE FROM data_bin;")
-  cursor, error_str = simu.conn["storage"]:execute("DELETE FROM metrics;")
-  cursor, error_str = simu.conn["cfg"]:execute("DELETE FROM mod_bam;")
-  cursor, error_str = simu.conn["cfg"]:execute("DELETE FROM mod_bam_kpi;")
+  clean_tables()
+  simu.start = os.clock()
 end
 
 function read()
@@ -234,6 +260,8 @@ function read()
       print(blue .. "CHECK " .. reset .. step[simu.step_check].name .. " DONE")
       if not step[simu.step_check].count.continue then
         broker_log:info(0, "No more step")
+        simu.finish = os.clock()
+        print(yellow .. "Execution duration: " .. reset .. (simu.finish - simu.start) .. "s")
         local output = os.capture("ps ax | grep \"\\<cbd\\>\" | grep -v grep | awk '{print $1}' ", 1)
         if output ~= "" then
           broker_log:info(0, "SEND COMMAND: kill " .. output)

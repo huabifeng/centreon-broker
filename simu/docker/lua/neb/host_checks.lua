@@ -13,8 +13,7 @@ end
 
 local function build_log(id, instance_id, name, address)
   if not data.now then
-    local now = os.time()
-    data.now = now
+    data.now = os.time()
   end
   local retval = {
     category = 1,
@@ -23,7 +22,7 @@ local function build_log(id, instance_id, name, address)
     retry = 0,
     instance_name = "Central_" .. instance_id,
     msg_type = 5,
-    output = "Je viens de lancer un check",
+    output = "A check has been executed",
     status = 0,
     host_name = name,
     host_id = id,
@@ -34,11 +33,7 @@ end
 
 local hosts = {
   name = "Hosts checks",
-  -- id: instance id
-  -- name: instance name
-  -- engine: Monitoring engine name in this instance
-  -- pid: Monitoring engine pid
-  --
+
   -- return: a neb::instance event
   build = function (stack, count, conn)
     local host_count = count.host
@@ -85,13 +80,14 @@ local hosts = {
 
     broker_log:info(0, "CHECK HOSTS LOGS")
     local retval = true
+    broker_log:info(3, [[SELECT host_id,output from logs WHERE ctime = ]] .. data.now .. " ORDER BY host_id")
     local cursor, error_str = conn["storage"]:execute([[SELECT host_id,output from logs WHERE ctime = ]] .. data.now .. " ORDER BY host_id")
     local row = cursor:fetch({}, "a")
     local id = 1
     local instance_id = 1
     while row do
       broker_log:info(1, "Check for host " .. id)
-      if tonumber(row.host_id) ~= id or row.output ~= "Je viens de lancer un check" then
+      if tonumber(row.host_id) ~= id or row.output ~= "A check has been executed" then
         broker_log:error(0, "Row found host_id = "
             .. row.host_id .. " output = " .. tostring(row.output))
         retval = false
