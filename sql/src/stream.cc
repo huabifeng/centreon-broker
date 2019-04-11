@@ -149,16 +149,9 @@ void stream::_clean_empty_host_groups(int instance_id) {
            "DELETE hg FROM hostgroups AS hg"
            " LEFT JOIN hosts_hostgroups AS hhg"
            " ON hg.hostgroup_id=hhg.hostgroup_id"
-           " WHERE hhg.host_id IS NULL",
+           " WHERE hhg.hostgroup_id IS NULL",
            "SQL: could not remove empty host groups", false,
            thread_id);
-
-//  _mysql.run_query(
-//           "DELETE FROM hostgroups"
-//           " WHERE hostgroup_id"
-//           " NOT IN (SELECT DISTINCT hostgroup_id FROM hosts_hostgroups)",
-//           "SQL: could not remove empty host groups", false,
-//           thread_id);
   _mysql.commit(thread_id);
 }
 
@@ -171,12 +164,16 @@ void stream::_clean_empty_service_groups(int instance_id) {
   logging::debug(logging::low)
     << "SQL: remove empty service groups (instance_id:"
     << instance_id << ")";
+
+  int thread_id(instance_id % _mysql.connections_count());
   _mysql.run_query(
-      "DELETE FROM servicegroups"
-      " WHERE servicegroup_id"
-      " NOT IN (SELECT DISTINCT servicegroup_id FROM services_servicegroups)",
+      "DELETE sg FROM servicegroups AS sg"
+      " LEFT JOIN services_servicegroups as ssg"
+      " ON sg.servicegroup_id=ssg.servicegroup_id"
+      " WHERE ssg.servicegroup_id IS NULL",
       "SQL: could not remove empty service groups", false,
-      instance_id % _mysql.connections_count());
+      thread_id);
+  _mysql.commit(thread_id);
 }
 
 /**
@@ -191,6 +188,7 @@ void stream::_clean_tables(unsigned int instance_id) {
   // Database version.
   bool db_v2(_mysql.schema_version() == mysql::v2);
 
+  int thread_id(instance_id % _mysql.connections_count());
   logging::debug(logging::low)
     << "SQL: disable hosts and services (instance_id: "
     << instance_id << ")";
@@ -205,7 +203,8 @@ void stream::_clean_tables(unsigned int instance_id) {
   _mysql.run_query(
            oss.str(),
            "SQL: could not clean hosts and services tables: ", false,
-           instance_id % _mysql.connections_count());
+           thread_id);
+  _mysql.commit(thread_id);
 
   // Remove host group memberships.
   if (db_v2) {
@@ -216,12 +215,13 @@ void stream::_clean_tables(unsigned int instance_id) {
     oss << "DELETE hosts_hostgroups"
         << " FROM hosts_hostgroups"
         << " LEFT JOIN hosts"
-        << "   ON hosts_hostgroups.host_id=hosts.host_id"
+        << " ON hosts_hostgroups.host_id=hosts.host_id"
         << " WHERE hosts.instance_id=" << instance_id;
     _mysql.run_query(
              oss.str(),
              "SQL: could not clean host groups memberships table: ", false,
-             instance_id % _mysql.connections_count());
+             thread_id);
+    _mysql.commit(thread_id);
   }
 
   // Remove service group memberships
@@ -238,7 +238,8 @@ void stream::_clean_tables(unsigned int instance_id) {
     _mysql.run_query(
              oss.str(),
              "SQL: could not clean service groups memberships table: ", false,
-             instance_id % _mysql.connections_count());
+             thread_id);
+    _mysql.commit(thread_id);
   }
 
   // Remove host groups.
