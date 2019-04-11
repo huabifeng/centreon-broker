@@ -144,20 +144,22 @@ void stream::_clean_empty_host_groups(int instance_id) {
   logging::debug(logging::low)
     << "SQL: remove empty host groups (instance_id:"
     << instance_id << ")";
+  int thread_id(instance_id % _mysql.connections_count());
   _mysql.run_query(
-           "LOCK TABLES hostgroups WRITE, hosts_hostgroups READ",
-           "SQL: could not lock hostgroups and hosts_hostgroups tables", false,
-           instance_id % _mysql.connections_count());
-  _mysql.run_query(
-           "DELETE FROM hostgroups"
-           " WHERE hostgroup_id"
-           " NOT IN (SELECT DISTINCT hostgroup_id FROM hosts_hostgroups)",
+           "DELETE hg FROM hostgroups AS hg"
+           " LEFT JOIN hosts_hostgroups AS hhg"
+           " ON hg.hostgroup_id=hhg.hostgroup_id"
+           " WHERE hhg.host_id IS NULL",
            "SQL: could not remove empty host groups", false,
-           instance_id % _mysql.connections_count());
-  _mysql.run_query(
-           "UNLOCK TABLES",
-           "SQL: could not unlock tables: ", false,
-           instance_id % _mysql.connections_count());
+           thread_id);
+
+//  _mysql.run_query(
+//           "DELETE FROM hostgroups"
+//           " WHERE hostgroup_id"
+//           " NOT IN (SELECT DISTINCT hostgroup_id FROM hosts_hostgroups)",
+//           "SQL: could not remove empty host groups", false,
+//           thread_id);
+  _mysql.commit(thread_id);
 }
 
 /**
@@ -170,19 +172,11 @@ void stream::_clean_empty_service_groups(int instance_id) {
     << "SQL: remove empty service groups (instance_id:"
     << instance_id << ")";
   _mysql.run_query(
-           "LOCK TABLES servicegroups WRITE, services_servicegroups READ",
-           "SQL: could not lock servicegroups and services_servicegroups tables", false,
-           instance_id % _mysql.connections_count());
-  _mysql.run_query(
       "DELETE FROM servicegroups"
       " WHERE servicegroup_id"
       " NOT IN (SELECT DISTINCT servicegroup_id FROM services_servicegroups)",
       "SQL: could not remove empty service groups", false,
       instance_id % _mysql.connections_count());
-  _mysql.run_query(
-           "UNLOCK TABLES",
-           "SQL: could not unlock tables: ", false,
-           instance_id % _mysql.connections_count());
 }
 
 /**
@@ -209,10 +203,6 @@ void stream::_clean_tables(unsigned int instance_id) {
         " SET h.enabled=0, s.enabled=0"
         " WHERE h.instance_id=" << instance_id;
   _mysql.run_query(
-       "LOCK TABLE hosts AS h WRITE, services AS s WRITE",
-       "SQL: could not lock hosts and services tables", false,
-       instance_id % _mysql.connections_count());
-  _mysql.run_query(
            oss.str(),
            "SQL: could not clean hosts and services tables: ", false,
            instance_id % _mysql.connections_count());
@@ -228,10 +218,6 @@ void stream::_clean_tables(unsigned int instance_id) {
         << " LEFT JOIN hosts"
         << "   ON hosts_hostgroups.host_id=hosts.host_id"
         << " WHERE hosts.instance_id=" << instance_id;
-    _mysql.run_query(
-             "LOCK TABLES hosts_hostgroups WRITE, hosts READ",
-             "SQL: could not lock hosts_hostgroups and hosts tables", false,
-             instance_id % _mysql.connections_count());
     _mysql.run_query(
              oss.str(),
              "SQL: could not clean host groups memberships table: ", false,
@@ -249,10 +235,6 @@ void stream::_clean_tables(unsigned int instance_id) {
         << " LEFT JOIN hosts"
         << "   ON services_servicegroups.host_id=hosts.host_id"
         << " WHERE hosts.instance_id=" << instance_id;
-    _mysql.run_query(
-             "LOCK TABLES services_servicegroups WRITE, hosts READ",
-             "SQL: could not lock services_servicegroups and services tables", false,
-             instance_id % _mysql.connections_count());
     _mysql.run_query(
              oss.str(),
              "SQL: could not clean service groups memberships table: ", false,
@@ -277,11 +259,6 @@ void stream::_clean_tables(unsigned int instance_id) {
          " ON hhd.host_id=h.host_id OR hhd.dependent_host_id=h.host_id"
          " WHERE h.instance_id=" << instance_id;
   _mysql.run_query(
-           "LOCK TABLES hosts_hosts_dependencies AS hhd WRITE,"
-           " hosts AS h READ",
-           "SQL: could not lock host dependencies or hosts tables: ", false,
-           instance_id % _mysql.connections_count());
-  _mysql.run_query(
            oss.str(),
            "SQL: could not clean host dependencies table: ", false,
            instance_id % _mysql.connections_count());
@@ -295,11 +272,6 @@ void stream::_clean_tables(unsigned int instance_id) {
          " INNER JOIN hosts as h"
          " ON hhp.child_id=h.host_id OR hhp.parent_id=h.host_id"
          " WHERE h.instance_id=" << instance_id;
-  _mysql.run_query(
-           "LOCK TABLES hosts_hosts_parents AS hhp WRITE,"
-           " hosts AS h READ",
-           "SQL: could not lock host parents or hosts tables: ", false,
-           instance_id % _mysql.connections_count());
   _mysql.run_query(
            oss.str(),
            "SQL: could not clean host parents table: ", false,
@@ -317,11 +289,6 @@ void stream::_clean_tables(unsigned int instance_id) {
          " ON s.host_id=h.host_id"
          " WHERE h.instance_id=" << instance_id;
   _mysql.run_query(
-           "LOCK TABLES services_services_dependencies AS ssd WRITE,"
-           " services AS s READ, hosts AS h READ",
-           "SQL: could not lock service dependencies, services or hosts tables: ", false,
-           instance_id % _mysql.connections_count());
-  _mysql.run_query(
            oss.str(),
            "SQL: could not clean host dependencies table: ", false,
            instance_id % _mysql.connections_count());
@@ -333,10 +300,6 @@ void stream::_clean_tables(unsigned int instance_id) {
   oss.str("");
   oss << "DELETE FROM " << (db_v2 ? "modules" : "rt_modules")
       << " WHERE instance_id=" << instance_id;
-  _mysql.run_query(
-           "LOCK TABLES modules WRITE",
-           "SQL: could not lock modules tables: ", false,
-           instance_id % _mysql.connections_count());
   _mysql.run_query(
            oss.str(),
            "SQL: could not clean modules table: ", false,
@@ -355,10 +318,6 @@ void stream::_clean_tables(unsigned int instance_id) {
          " AND d.cancelled=0"
          " AND h.instance_id=" << instance_id;
   _mysql.run_query(
-           "LOCK TABLES downtimes AS d WRITE, hosts AS h WRITE",
-           "SQL: could not lock downtimes or hosts table: ", false,
-           instance_id % _mysql.connections_count());
-  _mysql.run_query(
            oss.str(),
            "SQL: could not clean downtimes table: ", false,
            instance_id % _mysql.connections_count());
@@ -376,10 +335,6 @@ void stream::_clean_tables(unsigned int instance_id) {
         << " WHERE h.instance_id=" << instance_id
         << " AND c.persistent=0"
            " AND (c.deletion_time IS NULL OR c.deletion_time=0)";
-    _mysql.run_query(
-             "LOCK TABLES comments AS c WRITE, hosts AS h WRITE",
-             "SQL: could not lock comments or hosts table: ", false,
-             instance_id % _mysql.connections_count());
     _mysql.run_query(
              oss.str(),
              "SQL: could not clean comments table: ", false,
@@ -402,16 +357,8 @@ void stream::_clean_tables(unsigned int instance_id) {
          " WHERE h.instance_id=" << instance_id;
 
   _mysql.run_query(
-           "LOCK TABLES customvariables AS cv WRITE, hosts AS h READ",
-           "SQL: could not lock customvariables, hosts tables: ", false,
-           instance_id % _mysql.connections_count());
-  _mysql.run_query(
            oss.str(),
            "SQL: could not clean custom variables table: ", false,
-           instance_id % _mysql.connections_count());
-  _mysql.run_query(
-           "UNLOCK TABLES",
-           "SQL: could not unlock tables: ", false,
            instance_id % _mysql.connections_count());
   _mysql.commit(instance_id % _mysql.connections_count());
 }
@@ -1024,6 +971,7 @@ void stream::_process_host_group(
   neb::host_group const&
     hg(*static_cast<neb::host_group const*>(e.get()));
 
+  int thread_id(hg.poller_id % _mysql.connections_count());
   // Only process groups for v2 schema.
   if (_mysql.schema_version() != mysql::v2)
     logging::info(logging::medium)
@@ -1044,7 +992,8 @@ void stream::_process_host_group(
     _mysql.run_statement(
              _host_group_insupdate,
              oss.str(), true,
-             0);
+             thread_id);
+    _mysql.commit(thread_id);
   }
   // Delete group.
   else {
@@ -1062,11 +1011,10 @@ void stream::_process_host_group(
           << "  WHERE hosts_hostgroups.hostgroup_id=" << hg.id
           << "    AND hosts.instance_id=" << hg.poller_id;
       _mysql.run_query(oss.str(), "SQL: ", false,
-          hg.poller_id % _mysql.connections_count());
+          thread_id);
+      _mysql.commit(thread_id);
     }
 
-    // Delete empty group.
-    _clean_empty_host_groups(hg.poller_id);
   }
 }
 
@@ -1982,9 +1930,6 @@ void stream::_process_service_group(
                "SQL: ", false,
                sg.poller_id % _mysql.connections_count());
     }
-
-    // Delete empty groups.
-    _clean_empty_service_groups(sg.poller_id);
   }
 }
 
