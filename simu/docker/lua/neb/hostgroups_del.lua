@@ -18,7 +18,7 @@ local hostgroups_del = {
   -- pid: Monitoring engine pid
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local hostgroup_count = count.group
     broker_log:info(0, "BUILD HOSTGROUPS DELETION; hostgroup_count = " .. tostring(hostgroup_count))
     for i = 1,hostgroup_count do

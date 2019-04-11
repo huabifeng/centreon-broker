@@ -40,7 +40,7 @@ local hosts = {
   -- pid: Monitoring engine pid
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local host_count = count.host
     local poller_count = count.instance
     for j = 1,poller_count do

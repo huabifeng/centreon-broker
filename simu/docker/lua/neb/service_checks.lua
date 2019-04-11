@@ -20,7 +20,7 @@ local service_checks = {
   -- pid: Monitoring engine pid
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local service_count = count.service
     local host_count = count.host * count.instance
     for j = 1,host_count do

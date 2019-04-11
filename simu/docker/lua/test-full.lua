@@ -34,6 +34,7 @@ local step = {
   require('neb.acknowledgements'),
   require('neb.event_handler'),
   require('bam.ba_status'),
+  require('bam.kpi_status'),
   require('bam.dimension_truncate_table_signal'),
 }
 
@@ -55,7 +56,7 @@ step[3].count = {
   group = 10,
   continue = true,
 }
-
+--
 -- Hostgroups members
 step[4].count = {
   host = step[2].count.host,
@@ -162,8 +163,15 @@ step[17].count = {
   continue = true,
 }
 
--- Table truncate signal
+-- KPI status
 step[18].count = {
+  kpi = 100,
+  update_started = true,
+  continue = true,
+}
+
+-- Table truncate signal
+step[19].count = {
   update_started = true,
   continue = false,
 }
@@ -201,6 +209,7 @@ function init(conf)
   local cursor, error_str = simu.conn["storage"]:execute("DELETE FROM data_bin;")
   cursor, error_str = simu.conn["storage"]:execute("DELETE FROM metrics;")
   cursor, error_str = simu.conn["cfg"]:execute("DELETE FROM mod_bam;")
+  cursor, error_str = simu.conn["cfg"]:execute("DELETE FROM mod_bam_kpi;")
 end
 
 function read()
@@ -213,7 +222,7 @@ function read()
     if step[simu.step_build] then
       broker_log:info(0, "Build Step " .. simu.step_build)
       print(green .. "BUILD " .. reset .. step[simu.step_build].name)
-      step[simu.step_build].build(simu.stack, step[simu.step_build].count)
+      step[simu.step_build].build(simu.stack, step[simu.step_build].count, simu.conn)
       print("   stack size " .. #simu.stack)
       simu.step_build = simu.step_build + 1
     end

@@ -33,7 +33,7 @@ local instances = {
   -- pid: Monitoring engine pid
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local poller_count = count.instance
     broker_log:info(0, "BUILD INSTANCES ; poller_count = "
         .. tostring(poller_count))

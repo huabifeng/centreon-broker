@@ -58,7 +58,7 @@ local host_status = {
   name = "Host status",
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local host_count = count.host * count.instance
     broker_log:info(0, "BUILD HOST STATUS ; host_count = " .. host_count)
     for j = 1,host_count do

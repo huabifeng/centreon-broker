@@ -279,9 +279,7 @@ int monitoring_stream::write(std::shared_ptr<io::data> const& data) {
     std::ostringstream oss_err;
     oss_err << "BAM: could not update BA "
             << status->ba_id << ": ";
-    _mysql.run_statement(
-             _ba_update,
-             oss_err.str(), true);
+    _mysql.run_statement(_ba_update, oss_err.str(), true);
 
     if (status->state_changed) {
       std::pair<std::string, std::string>

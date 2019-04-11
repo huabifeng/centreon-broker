@@ -17,7 +17,7 @@ local servicegroups = {
   -- pid: Monitoring engine pid
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local servicegroup_count = count.servicegroup
     broker_log:info(0, "BUILD SERVICEGROUPS ; servicegroup_count = " .. tostring(servicegroup_count))
     for i = 1,servicegroup_count do

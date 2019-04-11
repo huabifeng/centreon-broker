@@ -26,7 +26,7 @@ end
 
 local comments = {
   name = "Comments",
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local host_count = count.host
     local instance_count = count.instance
     broker_log:info(0, "BUILD COMMENTS ; host_count = " .. host_count .. " ; instance_count = " .. count.instance)

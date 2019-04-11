@@ -18,9 +18,15 @@ end
 
 local ba_status = {
   name = "BA Status",
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local ba_count = count.ba
     broker_log:info(0, "BUILD BA STATUS ; ba = " .. ba_count)
+
+    for i = 1,ba_count do
+      local squery = "INSERT INTO mod_bam (ba_id, calculate, downtime, acknowledged) VALUES (%i,0,0,0)"
+      conn["cfg"]:execute(squery:format(i))
+    end
+
     for i = 1,ba_count do
       table.insert(stack, build(i))
     end
@@ -31,7 +37,7 @@ local ba_status = {
     local ba_count = count.ba
     broker_log:info(0, "CHECK BA STATUS")
     local retval = true
-    local cursor, error_str = conn["cfg"]:execute("SELECT count(*) from mod_bam" )
+    local cursor, error_str = conn["cfg"]:execute("SELECT count(*) from mod_bam WHERE current_level = 50" )
     local row = cursor:fetch({}, "a")
 
     if tonumber(row['count(*)']) ~= ba_count then

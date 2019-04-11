@@ -86,7 +86,7 @@ local services = {
   -- pid: Monitoring engine pid
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local service_count = count.service
     local host_count = count.host * count.instance
     broker_log:info(0, "BUILD SERVICES ; service_count = " .. service_count .. " ; host_count = " .. host_count)

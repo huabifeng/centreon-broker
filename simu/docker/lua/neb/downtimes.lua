@@ -42,7 +42,7 @@ local downtimes = {
   -- pid: Monitoring engine pid
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local downtime_count = count.host
     broker_log:info(0, "BUILD DOWNTIMES ; downtime_count = " .. tostring(downtime_count))
     for i = 1,downtime_count do

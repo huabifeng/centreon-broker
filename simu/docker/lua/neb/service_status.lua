@@ -71,7 +71,7 @@ local service_status = {
   -- pid: Monitoring engine pid
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local metric_count = count.metric
     local service_count = count.service
     local host_count = count.host * count.instance

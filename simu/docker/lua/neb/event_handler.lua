@@ -37,7 +37,7 @@ local event_handler = {
   -- pid: Monitoring engine pid
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local host_count = count.host * count.instance
     local service_count = count.service
     broker_log:info(0, "EVENT HANDLER ; service_count = "

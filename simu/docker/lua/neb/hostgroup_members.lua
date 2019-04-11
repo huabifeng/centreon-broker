@@ -18,7 +18,7 @@ local hostgroup_members = {
   -- pid: Monitoring engine pid
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local host_count = count.host * count.instance
     local hostgroup_count = count.hostgroup
     local instance_id = 1

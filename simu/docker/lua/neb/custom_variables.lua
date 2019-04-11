@@ -17,7 +17,7 @@ end
 
 local custom_variables = {
   name = "Custom variables",
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local cv_count = count.cv
     local host_count = count.host * count.instance
     broker_log:info(0, "BUILD CUSTOM VARIABLES ; cv_count = " .. tostring(cv_count) .. " host_count = " .. tostring(host_count))

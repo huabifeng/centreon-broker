@@ -29,7 +29,7 @@ local acknowledgements = {
   -- pid: Monitoring engine pid
   --
   -- return: a neb::instance event
-  build = function (stack, count)
+  build = function (stack, count, conn)
     local instance_count = count.instance
     local host_count = count.host
     local service_count = count.service
