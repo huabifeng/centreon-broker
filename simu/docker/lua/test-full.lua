@@ -36,6 +36,8 @@ local step = {
   require('neb.event_handler'),
   require('bam.ba_status'),
   require('bam.kpi_status'),
+  require('bam.ba_events'),
+  require('bam.kpi_events'),
   require('bam.dimension_truncate_table_signal'),
 }
 
@@ -149,7 +151,7 @@ step[15].count = {
   continue = true,
 }
 
--- Event handlers
+-- Event handler status
 step[16].count = {
   service = 50,
   host = step[2].count.host,
@@ -171,8 +173,22 @@ step[18].count = {
   continue = true,
 }
 
--- Table truncate signal
+-- Ba events
 step[19].count = {
+  ba = 100,
+  update_started = true,
+  continue = true,
+}
+
+-- KPI events
+step[20].count = {
+  kpi = 100,
+  update_started = true,
+  continue = true,
+}
+
+-- Table truncate signal
+step[21].count = {
   update_started = true,
   continue = false,
 }
@@ -206,6 +222,8 @@ function clean_tables()
     { "storage", "INSERT INTO hostgroups (name) VALUES ('hostgroup_15')" },
     { "cfg", "DELETE FROM mod_bam" },
     { "cfg", "DELETE FROM mod_bam_kpi" },
+    { "storage", "DELETE FROM mod_bam_reporting_ba_events" },
+    { "storage", "DELETE FROM mod_bam_reporting_kpi_events" },
   }
 
   for _,l in ipairs(queries) do
