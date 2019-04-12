@@ -42,7 +42,6 @@ local hostgroup_members = {
   check = function (conn, count)
     local host_count = count.host * count.instance
     local hostgroup_count = count.hostgroup
-    local now = os.time()
     broker_log:info(0, "CHECK HOST GROUPS MEMBERS")
     local retval = true
     local cursor, error_str = conn["storage"]:execute([[SELECT hostgroup_id, host_id from hosts_hostgroups ORDER BY host_id, hostgroup_id]])

@@ -27,6 +27,7 @@ local step = {
   require('neb.comments'),
   require('neb.services'),
   require('neb.servicegroups'),
+  require('neb.servicegroup_members'),
   require('neb.service_checks'),
   require('neb.service_status'),
   require('neb.downtimes'),
@@ -106,16 +107,25 @@ step[9].count = {
   continue = true,
 }
 
--- Service checks
+-- Servicegroups members
 step[10].count = {
-  service = 50,
+  instance = step[2].count.instance,
+  host = step[2].count.host,
+  service = step[8].count.service,
+  servicegroup = 20,
+  continue = true,
+}
+
+-- Service checks
+step[11].count = {
+  service = step[8].count.service,
   host = step[2].count.host,
   instance = step[2].count.instance,
   continue = true,
 }
 
 -- Services status per host          => 20
-step[11].count = {
+step[12].count = {
   service = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
@@ -124,34 +134,26 @@ step[11].count = {
 }
 
 -- Downtimes per host
-step[12].count = {
+step[13].count = {
   host = 5,
   continue = true,
 }
 
 -- Host checks and logs per instance
-step[13].count = {
-  host = step[2].count.host,
-  instance = step[1].count.instance,
-  continue = true,
-}
-
--- Host status
 step[14].count = {
   host = step[2].count.host,
   instance = step[1].count.instance,
   continue = true,
 }
 
--- Acknowledgements
+-- Host status
 step[15].count = {
-  service = 50,
   host = step[2].count.host,
-  instance = step[2].count.instance,
+  instance = step[1].count.instance,
   continue = true,
 }
 
--- Event handler status
+-- Acknowledgements
 step[16].count = {
   service = 50,
   host = step[2].count.host,
@@ -159,36 +161,44 @@ step[16].count = {
   continue = true,
 }
 
--- Ba status
+-- Event handler
 step[17].count = {
+  service = 50,
+  host = step[2].count.host,
+  instance = step[2].count.instance,
+  continue = true,
+}
+
+-- Ba status
+step[18].count = {
   ba = 100,
   update_started = true,
   continue = true,
 }
 
 -- KPI status
-step[18].count = {
-  kpi = 100,
-  update_started = true,
-  continue = true,
-}
-
--- Ba events
 step[19].count = {
   ba = 100,
   update_started = true,
   continue = true,
 }
 
--- KPI events
+-- Ba events
 step[20].count = {
+  ba = 100,
+  update_started = true,
+  continue = true,
+}
+
+-- KPI events
+step[21].count = {
   kpi = 100,
   update_started = true,
   continue = true,
 }
 
 -- Table truncate signal
-step[21].count = {
+step[22].count = {
   update_started = true,
   continue = false,
 }
