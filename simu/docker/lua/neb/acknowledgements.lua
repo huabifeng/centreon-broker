@@ -50,11 +50,16 @@ local acknowledgements = {
 
   check = function (conn, count)
     broker_log:info(0, "CHECK ACKNOWLEDGEMENT")
+    if not ack_data.start then
+      return false
+    end
 --    local service_count = count.service
 --    local host_count = count.host * count.instance
 --    local now = os.time()
 --    local retval = true
-    local cursor, error_str = conn:execute([[SELECT count(*) from acknowledgements WHERE entry_time=]] .. ack_data.start)
+    local cursor, error_str = conn["storage"]:execute(
+            "SELECT count(*) from acknowledgements WHERE entry_time="
+            .. ack_data.start)
     local row = cursor:fetch({}, "a")
     local id = 1
     if tonumber(row['count(*)']) ~= 1000 then

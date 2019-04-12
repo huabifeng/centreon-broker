@@ -80,8 +80,11 @@ local hosts = {
 
     broker_log:info(0, "CHECK HOSTS LOGS")
     local retval = true
-    broker_log:info(3, [[SELECT host_id,output from logs WHERE ctime = ]] .. data.now .. " ORDER BY host_id")
-    local cursor, error_str = conn["storage"]:execute([[SELECT host_id,output from logs WHERE ctime = ]] .. data.now .. " ORDER BY host_id")
+    broker_log:info(3, "SELECT host_id,output from logs WHERE ctime="
+                       .. data.now .. " ORDER BY host_id")
+    local cursor, error_str = conn["storage"]:execute(
+                                 "SELECT host_id,output from logs WHERE ctime="
+                                 .. data.now .. " ORDER BY host_id")
     local row = cursor:fetch({}, "a")
     local id = 1
     local instance_id = 1
