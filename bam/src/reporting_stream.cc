@@ -559,9 +559,9 @@ void reporting_stream::_prepare() {
           "            (timeperiod_id, name, sunday, monday,"
           "             tuesday, wednesday, thursday, friday,"
           "             saturday)"
-          "  VALUES (:timeperiod_id, :name, :sunday, :monday,"
-          "          :tuesday, :wednesday, :thursday, :friday,"
-          "          :saturday)";
+          "  VALUES (?, ?, ?, ?,"
+          "          ?, ?, ?, ?,"
+          "          ?)";
   _dimension_timeperiod_insert = _mysql.prepare_query(query);
 
   query = "INSERT INTO mod_bam_reporting_timeperiods_exceptions"
