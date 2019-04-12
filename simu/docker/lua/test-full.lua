@@ -112,7 +112,7 @@ step[10].count = {
   continue = true,
 }
 
--- Services per host          => 20
+-- Services status per host          => 20
 step[11].count = {
   service = 50,
   host = step[2].count.host,
@@ -204,7 +204,8 @@ function clean_tables()
     { "storage", "INSERT INTO hostgroups (name) VALUES ('hostgroup_13')" },
     { "storage", "INSERT INTO hostgroups (name) VALUES ('hostgroup_14')" },
     { "storage", "INSERT INTO hostgroups (name) VALUES ('hostgroup_15')" },
-    --{ "cfg", "DELETE FROM mod_bam" },
+    { "cfg", "DELETE FROM mod_bam" },
+    { "cfg", "DELETE FROM mod_bam_kpi" },
   }
 
   for _,l in ipairs(queries) do

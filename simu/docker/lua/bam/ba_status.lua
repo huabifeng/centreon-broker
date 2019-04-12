@@ -23,8 +23,12 @@ local ba_status = {
     broker_log:info(0, "BUILD BA STATUS ; ba = " .. ba_count)
 
     for i = 1,ba_count do
-      local squery = "INSERT INTO mod_bam (ba_id, calculate, downtime, acknowledged) VALUES (%i,0,0,0)"
-      conn["cfg"]:execute(squery:format(i))
+      local squery = "INSERT INTO mod_bam (ba_id, calculate, downtime, acknowledged) VALUES (%i,'0',0,0)"
+      local cursor, err = conn["cfg"]:execute(squery:format(i))
+      if err then
+        print(err)
+        error(err)
+      end
     end
 
     for i = 1,ba_count do

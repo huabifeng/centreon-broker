@@ -28,8 +28,12 @@ local kpi_status = {
     broker_log:info(0, "BUILD KPI STATUS ; kpi = " .. kpi_count)
 
     for i = 1,kpi_count do
-      local squery = "INSERT INTO mod_bam_kpi (kpi_id, state_type, kpi_type, valid) VALUES (%i,0,0,1)"
-      conn["cfg"]:execute(squery:format(i))
+      local squery = "INSERT INTO mod_bam_kpi (kpi_id, state_type, kpi_type, valid) VALUES (%i,'0','0',1)"
+      local cursor, err = conn["cfg"]:execute(squery:format(i))
+      if err then
+        print(err)
+        error(err)
+      end
     end
 
     for i = 1,kpi_count do
