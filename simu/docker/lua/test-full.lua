@@ -172,34 +172,29 @@ step[17].count = {
 -- Ba status
 step[18].count = {
   ba = 100,
-  update_started = true,
   continue = true,
 }
 
 -- KPI status
 step[19].count = {
-  ba = 100,
-  update_started = true,
+  kpi = 100,
   continue = true,
 }
 
 -- Ba events
 step[20].count = {
   ba = 100,
-  update_started = true,
   continue = true,
 }
 
 -- KPI events
 step[21].count = {
   kpi = 100,
-  update_started = true,
   continue = true,
 }
 
 -- Table truncate signal
 step[22].count = {
-  update_started = true,
   continue = false,
 }
 
