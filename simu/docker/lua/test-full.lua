@@ -18,30 +18,31 @@ local simu = {
 }
 
 local step = {
-  require('neb.instances'),
-  require('neb.hosts'),
-  require('neb.hostgroups'),
-  require('neb.hostgroup_members'),
-  require('neb.custom_variables'),
-  require('neb.custom_variable_status'),
-  require('neb.comments'),
-  require('neb.services'),
-  require('neb.servicegroups'),
-  require('neb.servicegroup_members'),
-  require('neb.service_checks'),
-  require('neb.service_status'),
-  require('neb.downtimes'),
-  require('neb.host_checks'),
-  require('neb.host_status'),
-  require('neb.acknowledgements'),
-  require('neb.event_handler'),
-  require('neb.flapping_status'),
-  require('neb.host_dependency'),
-  require('bam.ba_status'),
-  require('bam.kpi_status'),
-  require('bam.ba_events'),
-  require('bam.kpi_events'),
-  require('bam.dimension_truncate_table_signal'),
+  require('neb.instances'),                         --  1
+  require('neb.hosts'),                             --  2
+  require('neb.hostgroups'),                        --  3
+  require('neb.hostgroup_members'),                 --  4
+  require('neb.custom_variables'),                  --  5
+  require('neb.custom_variable_status'),            --  6
+  require('neb.comments'),                          --  7
+  require('neb.services'),                          --  8
+  require('neb.servicegroups'),                     --  9
+  require('neb.servicegroup_members'),              -- 10
+  require('neb.service_checks'),                    -- 11
+  require('neb.service_status'),                    -- 12
+  require('neb.downtimes'),                         -- 13
+  require('neb.host_checks'),                       -- 14
+  require('neb.host_status'),                       -- 15
+  require('neb.acknowledgements'),                  -- 16
+  require('neb.event_handler'),                     -- 17
+  require('neb.flapping_status'),                   -- 18
+  require('neb.host_dependency'),                   -- 19
+  require('neb.host_parent'),                       -- 20
+  require('bam.ba_status'),                         -- 21
+  require('bam.kpi_status'),                        -- 22
+  require('bam.ba_events'),                         -- 23
+  require('bam.kpi_events'),                        -- 24
+  require('bam.dimension_truncate_table_signal'),   -- 25
 }
 
 -- Instances                  => 18
@@ -186,32 +187,39 @@ step[19].count = {
   continue = true,
 }
 
--- Ba status
+-- Host parent
 step[20].count = {
+  host = step[2].count.host,
+  instance = step[2].count.instance,
+  continue = false,
+}
+
+-- Ba status
+step[21].count = {
   ba = 100,
   continue = true,
 }
 
 -- KPI status
-step[21].count = {
+step[22].count = {
   kpi = 100,
   continue = true,
 }
 
 -- Ba events
-step[22].count = {
+step[23].count = {
   ba = 100,
   continue = true,
 }
 
 -- KPI events
-step[23].count = {
+step[24].count = {
   kpi = 100,
   continue = true,
 }
 
 -- Table truncate signal
-step[24].count = {
+step[25].count = {
   continue = false,
 }
 
@@ -246,6 +254,7 @@ function clean_tables()
     { "cfg", "DELETE FROM mod_bam_kpi" },
     { "storage", "DELETE FROM mod_bam_reporting_ba_events" },
     { "storage", "DELETE FROM mod_bam_reporting_kpi_events" },
+    { "storage", "DELETE FROM hosts_hosts_dependencies" },
   }
 
   for _,l in ipairs(queries) do

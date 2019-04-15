@@ -42,7 +42,6 @@ local host_dependency = {
         end
       end
     end
-    print(broker.json_encode(stack))
     broker_log:info(0, "BUILD HOST DEPENDENCY => FINISHED")
   end,
 

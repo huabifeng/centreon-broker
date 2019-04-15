@@ -16,7 +16,7 @@
 ** For more information : contact@centreon.com
 */
 
-#include <cassert>
+#include <iostream>
 #include <ctime>
 #include <limits>
 #include <sstream>
@@ -262,7 +262,8 @@ void stream::_clean_tables(unsigned int instance_id) {
   _mysql.run_query(
            oss.str(),
            "SQL: could not clean host dependencies table: ", false,
-           instance_id % _mysql.connections_count());
+           0);
+  _mysql.commit(0);
 
   // Remove host parents.
   logging::debug(logging::low)
@@ -926,7 +927,6 @@ void stream::_process_host_dependency(
     _mysql.run_statement(
              _host_dependency_insupdate,
              oss.str(), true, 0);
-    _mysql.commit(0);
   }
   // Delete.
   else {
@@ -941,7 +941,6 @@ void stream::_process_host_dependency(
         << "  WHERE dependent_host_id=" << hd.dependent_host_id
         << "    AND host_id=" << hd.host_id;
     _mysql.run_query(oss.str(), "SQL: ", true, 0);
-    _mysql.commit(0);
   }
 }
 
@@ -1034,7 +1033,6 @@ void stream::_process_host_group_member(
     hgm(*static_cast<neb::host_group_member const*>(e.get()));
   int poller_id(_cache_host_instance[hgm.host_id]);
   int thread_id(poller_id % _mysql.connections_count());
-  assert(poller_id);
 
   // Only process groups for v2 schema.
   if (_mysql.schema_version() != mysql::v2)
@@ -1095,8 +1093,6 @@ void stream::_process_host_group_member(
       oss << "SQL: could not store host group membership (poller: "
           << hgm.poller_id << ", host: " << hgm.host_id << ", group: "
           << hgm.group_id << "): ";
-      assert(hgm.host_id != 0);
-      assert(hgm.group_id != 0);
       _host_group_member_insert << hgm;
       _mysql.run_statement(
                 _host_group_member_insert,
@@ -1165,8 +1161,7 @@ void stream::_process_host_parent(
     _host_parent_insert << hp;
     _mysql.run_statement(
              _host_parent_insert,
-             oss.str(), false,
-             _cache_host_instance[hp.host_id] % _mysql.connections_count());
+             oss.str(), false, 0);
   }
   // Disable parenting.
   else {
@@ -1187,7 +1182,7 @@ void stream::_process_host_parent(
     _mysql.run_statement(
              _host_parent_delete,
              "SQL: ", false,
-             _cache_host_instance[hp.host_id] % _mysql.connections_count());
+             0);
   }
 }
 
@@ -1860,8 +1855,8 @@ void stream::_process_service_dependency(
     _service_dependency_insupdate << sd;
     _mysql.run_statement(
              _service_dependency_insupdate,
-             oss.str(), true,
-             _cache_host_instance[sd.host_id] % _mysql.connections_count());
+             oss.str(), true, 0);
+             //_cache_host_instance[sd.host_id] % _mysql.connections_count());
   }
   // Delete.
   else {
@@ -1880,8 +1875,8 @@ void stream::_process_service_dependency(
         << "    AND service_id=" << sd.service_id;
     _mysql.run_query(
              oss.str(),
-             "SQL: ", false,
-             _cache_host_instance[sd.host_id] % _mysql.connections_count());
+             "SQL: ", false, 0);
+             //_cache_host_instance[sd.host_id] % _mysql.connections_count());
   }
 }
 
