@@ -608,6 +608,7 @@ void stream::_process_downtime(
 
   // Check if poller is valid.
   if (_is_valid_poller(d.poller_id)) {
+    int thread_id(_cache_host_instance[d.host_id] % _mysql.connections_count());
     // Prepare queries.
     if (!_downtime_insupdate.prepared()) {
       std::ostringstream oss;
@@ -641,7 +642,8 @@ void stream::_process_downtime(
     _mysql.run_statement(
              _downtime_insupdate,
              oss.str(), true,
-             _cache_host_instance[d.host_id] % _mysql.connections_count());
+             0);
+    _mysql.commit(0);
   }
 }
 
@@ -1067,6 +1069,7 @@ void stream::_process_host_group_member(
                "SQL: host group not defined",
                thread_id);
       promise.get_future().get();
+      _mysql.commit(thread_id);
     }
     catch (std::exception const& e) {
       _prepare_hg_insupdate_statement();
@@ -1098,6 +1101,7 @@ void stream::_process_host_group_member(
                 _host_group_member_insert,
                 oss.str(), false,
                 thread_id);
+      _mysql.commit(thread_id);
     }
   }
   // Delete.
@@ -1126,6 +1130,7 @@ void stream::_process_host_group_member(
              _host_group_member_delete,
              oss.str(), true,
              thread_id);
+    _mysql.commit(thread_id);
   }
 }
 
