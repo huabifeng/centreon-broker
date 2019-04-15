@@ -35,6 +35,7 @@ local step = {
   require('neb.host_status'),
   require('neb.acknowledgements'),
   require('neb.event_handler'),
+  require('neb.flapping_status'),
   require('bam.ba_status'),
   require('bam.kpi_status'),
   require('bam.ba_events'),
@@ -129,7 +130,7 @@ step[12].count = {
   service = 50,
   host = step[2].count.host,
   instance = step[2].count.instance,
-  metric = 1,
+  metric = 2,
   continue = true,
 }
 
@@ -169,32 +170,40 @@ step[17].count = {
   continue = true,
 }
 
--- Ba status
+-- Flapping status
 step[18].count = {
+  service = 50,
+  host = step[2].count.host,
+  instance = step[2].count.instance,
+  continue = true,
+}
+
+-- Ba status
+step[19].count = {
   ba = 100,
   continue = true,
 }
 
 -- KPI status
-step[19].count = {
+step[20].count = {
   kpi = 100,
   continue = true,
 }
 
 -- Ba events
-step[20].count = {
+step[21].count = {
   ba = 100,
   continue = true,
 }
 
 -- KPI events
-step[21].count = {
+step[22].count = {
   kpi = 100,
   continue = true,
 }
 
 -- Table truncate signal
-step[22].count = {
+step[23].count = {
   continue = false,
 }
 
