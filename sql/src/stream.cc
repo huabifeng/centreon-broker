@@ -925,8 +925,8 @@ void stream::_process_host_dependency(
     _host_dependency_insupdate << hd;
     _mysql.run_statement(
              _host_dependency_insupdate,
-             oss.str(), true,
-             _cache_host_instance[hd.host_id] % _mysql.connections_count());
+             oss.str(), true, 0);
+    _mysql.commit(0);
   }
   // Delete.
   else {
@@ -940,7 +940,8 @@ void stream::_process_host_dependency(
             : "rt_hosts_hosts_dependencies")
         << "  WHERE dependent_host_id=" << hd.dependent_host_id
         << "    AND host_id=" << hd.host_id;
-    _mysql.run_query(oss.str(), "SQL: ");
+    _mysql.run_query(oss.str(), "SQL: ", true, 0);
+    _mysql.commit(0);
   }
 }
 

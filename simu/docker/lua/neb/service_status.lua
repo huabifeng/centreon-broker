@@ -75,7 +75,6 @@ local service_status = {
   --
   -- return: a neb::instance event
   build = function (stack, count, conn)
-  print("BUILD BUILD")
     local metric_count = count.metric
     local service_count = count.service
     local host_count = count.host * count.instance
