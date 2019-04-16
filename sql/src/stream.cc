@@ -339,8 +339,7 @@ void stream::_clean_tables(unsigned int instance_id) {
            " AND (c.deletion_time IS NULL OR c.deletion_time=0)";
     _mysql.run_query(
              oss.str(),
-             "SQL: could not clean comments table: ", false,
-             instance_id % _mysql.connections_count());
+             "SQL: could not clean comments table: ", false, 0);
   }
 
   // Remove custom variables. No need to choose the good instance, there are
@@ -476,7 +475,8 @@ void stream::_process_comment(std::shared_ptr<io::data> const& e) {
   _mysql.run_statement(
            _comment_insupdate,
            oss.str(), true,
-           cmmnt.poller_id % _mysql.connections_count());
+           0);
+           //cmmnt.poller_id % _mysql.connections_count());
 }
 
 /**
@@ -768,8 +768,7 @@ void stream::_process_flapping_status(
   _flapping_status_insupdate << fs;
   _mysql.run_statement(
            _flapping_status_insupdate,
-           oss.str(), true,
-           _cache_host_instance[fs.host_id] % _mysql.connections_count());
+           oss.str(), true, 0);
 }
 
 /**

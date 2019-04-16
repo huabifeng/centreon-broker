@@ -38,11 +38,12 @@ local step = {
   require('neb.flapping_status'),                   -- 18
   require('neb.host_dependency'),                   -- 19
   require('neb.host_parent'),                       -- 20
-  require('bam.ba_status'),                         -- 21
-  require('bam.kpi_status'),                        -- 22
-  require('bam.ba_events'),                         -- 23
-  require('bam.kpi_events'),                        -- 24
-  require('bam.dimension_truncate_table_signal'),   -- 25
+  require('neb.instance_status'),                   -- 21
+  require('bam.ba_status'),                         -- 22
+  require('bam.kpi_status'),                        -- 23
+  require('bam.ba_events'),                         -- 24
+  require('bam.kpi_events'),                        -- 25
+  require('bam.dimension_truncate_table_signal'),   -- 26
 }
 
 -- Instances                  => 18
@@ -191,35 +192,41 @@ step[19].count = {
 step[20].count = {
   host = step[2].count.host,
   instance = step[2].count.instance,
-  continue = false,
+  continue = true,
+}
+
+-- Instance status
+step[21].count = {
+  instance = step[1].count.instance,
+  continue = true,
 }
 
 -- Ba status
-step[21].count = {
+step[22].count = {
   ba = 100,
   continue = true,
 }
 
 -- KPI status
-step[22].count = {
+step[23].count = {
   kpi = 100,
   continue = true,
 }
 
 -- Ba events
-step[23].count = {
+step[24].count = {
   ba = 100,
   continue = true,
 }
 
 -- KPI events
-step[24].count = {
+step[25].count = {
   kpi = 100,
   continue = true,
 }
 
 -- Table truncate signal
-step[25].count = {
+step[26].count = {
   continue = false,
 }
 
