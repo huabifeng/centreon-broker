@@ -78,6 +78,7 @@ class                   mysql {
   version               schema_version() const;
   int                   connections_count() const;
   bool                  commit_if_needed();
+  int                   choose_connection_by_name(std::string const& name);
 
  private:
   static void           _initialize_mysql();
@@ -94,6 +95,8 @@ class                   mysql {
                         _connection;
   version               _version;
   int                   _current_connection;
+  std::unordered_map<std::string, int>
+                        _connection_by_name;
 };
 
 CCB_END()

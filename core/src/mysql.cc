@@ -413,3 +413,25 @@ mysql::version mysql::schema_version() const {
 int mysql::connections_count() const {
   return _connection.size();
 }
+
+/**
+ *  Return a connection index from a name. The same name will give the same
+ *  index.
+ *
+ *  @param name The name to give
+ *
+ *  @return an integer
+ */
+int mysql::choose_connection_by_name(std::string const& name) {
+  static int connection(0);
+  int retval;
+  std::unordered_map<std::string, int>::iterator it(_connection_by_name.find(name));
+
+  if (it == _connection_by_name.end()) {
+    retval = (++connection) % connections_count();
+    _connection_by_name.insert(std::make_pair(name, retval));
+  }
+  else
+    retval = it->second;
+  return retval;
+}
