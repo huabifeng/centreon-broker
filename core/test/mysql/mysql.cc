@@ -1540,3 +1540,30 @@ TEST_F(DatabaseStorageTest, ServiceGroupMemberStatement) {
 //  res = promise.get_future().get();
 //  ASSERT_TRUE(ms->fetch_row(res));
 //}
+
+TEST_F(DatabaseStorageTest, ChooseConnectionByName) {
+  modules::loader l;
+  database_config db_cfg(
+    "MySQL",
+    "127.0.0.1",
+    3306,
+    "root",
+    "root",
+    "centreon_storage",
+    5,
+    true,
+    5);
+  std::unique_ptr<mysql> ms(new mysql(db_cfg));
+  int thread_foo(ms->choose_connection_by_name("foo"));
+  int thread_bar(ms->choose_connection_by_name("bar"));
+  int thread_boo(ms->choose_connection_by_name("boo"));
+  int thread_foo1(ms->choose_connection_by_name("foo"));
+  int thread_bar1(ms->choose_connection_by_name("bar"));
+  int thread_boo1(ms->choose_connection_by_name("boo"));
+  ASSERT_EQ(thread_foo, 0);
+  ASSERT_EQ(thread_bar, 1);
+  ASSERT_EQ(thread_boo, 2);
+  ASSERT_EQ(thread_foo, thread_foo1);
+  ASSERT_EQ(thread_bar, thread_bar1);
+  ASSERT_EQ(thread_boo, thread_boo1);
+}

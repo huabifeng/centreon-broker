@@ -79,11 +79,12 @@ class                   mysql {
   int                   connections_count() const;
   bool                  commit_if_needed();
   int                   choose_connection_by_name(std::string const& name);
+  int                   choose_connection_by_instance(int instance_id) const;
 
  private:
   static void           _initialize_mysql();
   void                  _check_errors();
-  int                   _get_best_connection();
+  int                   _choose_best_connection();
 
   static std::atomic_int
                         _count_ref;

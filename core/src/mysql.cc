@@ -151,32 +151,6 @@ void mysql::_check_errors() {
 }
 
 /**
- *  _get_best_connection
- *
- * This method compares the connections activity and returns the index of
- * the best one to execute a new query.
- *
- * @return an integer.
- */
-int mysql::_get_best_connection() {
-  /* We work with _current_connection to avoid always working with the same
-   * connections. */
-  int retval(_current_connection);
-  int task_count(std::numeric_limits<int>::max());
-  int count(_connection.size());
-  for (int i(0); i < count; i++) {
-    ++_current_connection;
-    if (_current_connection >= count)
-      _current_connection = 0;
-    if (_connection[_current_connection]->get_tasks_count() < task_count) {
-      retval = _current_connection;
-      task_count = _connection[_current_connection]->get_tasks_count();
-    }
-  }
-  return retval;
-}
-
-/**
  *  The simplest way to execute a query. Only the first arg is mandatory.
  *
  * @param query The query to execute.
@@ -194,7 +168,7 @@ int mysql::run_query(std::string const& query,
   _check_errors();
   if (thread_id < 0)
     // Here, we use _current_thread
-    thread_id = _get_best_connection();
+    thread_id = _choose_best_connection();
 
   _connection[thread_id]->run_query(
     query,
@@ -226,7 +200,7 @@ int mysql::run_query_and_get_result(
   _check_errors();
   if (thread_id < 0)
     // Here, we use _current_thread
-    thread_id = _get_best_connection();
+    thread_id = _choose_best_connection();
 
   _connection[thread_id]->run_query_and_get_result(
                             query,
@@ -261,7 +235,7 @@ int mysql::run_query_and_get_int(
   _check_errors();
   if (thread_id < 0)
     // Here, we use _current_thread
-    thread_id = _get_best_connection();
+    thread_id = _choose_best_connection();
 
   _connection[thread_id]->run_query_and_get_int(
                             query,
@@ -290,7 +264,7 @@ int mysql::run_statement(
   _check_errors();
   if (thread_id < 0)
     // Here, we use _current_thread
-    thread_id = _get_best_connection();
+    thread_id = _choose_best_connection();
 
   _connection[thread_id]->run_statement(stmt, error_msg, fatal);
   return thread_id;
@@ -320,7 +294,7 @@ int mysql::run_statement_and_get_result(
   _check_errors();
   if (thread_id < 0)
     // Here, we use _current_thread
-    thread_id = _get_best_connection();
+    thread_id = _choose_best_connection();
 
   _connection[thread_id]->run_statement_and_get_result(
                             stmt,
@@ -353,7 +327,7 @@ int mysql::run_statement_and_get_int(
   _check_errors();
   if (thread_id < 0)
     // Here, we use _current_thread
-    thread_id = _get_best_connection();
+    thread_id = _choose_best_connection();
 
   _connection[thread_id]->run_statement_and_get_int(
                             stmt,
@@ -415,6 +389,32 @@ int mysql::connections_count() const {
 }
 
 /**
+ *  _choose_best_connection
+ *
+ * This method compares the connections activity and returns the index of
+ * the best one to execute a new query.
+ *
+ * @return an integer.
+ */
+int mysql::_choose_best_connection() {
+  /* We work with _current_connection to avoid always working with the same
+   * connections. */
+  int retval(_current_connection);
+  int task_count(std::numeric_limits<int>::max());
+  int count(_connection.size());
+  for (int i(0); i < count; i++) {
+    ++_current_connection;
+    if (_current_connection >= count)
+      _current_connection = 0;
+    if (_connection[_current_connection]->get_tasks_count() < task_count) {
+      retval = _current_connection;
+      task_count = _connection[_current_connection]->get_tasks_count();
+    }
+  }
+  return retval;
+}
+
+/**
  *  Return a connection index from a name. The same name will give the same
  *  index.
  *
@@ -428,10 +428,22 @@ int mysql::choose_connection_by_name(std::string const& name) {
   std::unordered_map<std::string, int>::iterator it(_connection_by_name.find(name));
 
   if (it == _connection_by_name.end()) {
-    retval = (++connection) % connections_count();
+    retval = (connection++) % connections_count();
     _connection_by_name.insert(std::make_pair(name, retval));
   }
   else
     retval = it->second;
   return retval;
+}
+
+/**
+ *  Return a connection index from an instance id. Each time a same instance
+ *  is choosen, the same integer is returned.
+ *
+ *  @param instance_id The instance id we work with.
+ *
+ *  @return an integer
+ */
+int mysql::choose_connection_by_instance(int instance_id) const {
+  return instance_id % connections_count();
 }

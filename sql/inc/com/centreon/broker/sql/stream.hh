@@ -111,6 +111,7 @@ namespace          sql {
     static void (stream::* const _correlation_processing_table[])(std::shared_ptr<io::data> const&);
     static void (stream::* const _neb_processing_table[])(std::shared_ptr<io::data> const&);
     mysql                       _mysql;
+    mysql                       _transversal_mysql;
 
     // Cache
     database::mysql_stmt        _acknowledgement_insupdate;
@@ -156,12 +157,12 @@ namespace          sql {
     bool                        _with_state_events;
     unsigned int                _instance_timeout;
 
-    std::map<unsigned int, stored_timestamp>
+    std::unordered_map<unsigned int, stored_timestamp>
                                 _stored_timestamps;
     timestamp                   _oldest_timestamp;
-    std::map<unsigned int, unsigned int>
+    std::unordered_map<unsigned int, unsigned int>
                                 _cache_host_instance;
-    std::map<unsigned int, size_t>
+    std::unordered_map<unsigned int, size_t>
                                 _cache_hst_cmd;
     std::map<std::pair<unsigned int, unsigned int>, size_t>
                                 _cache_svc_cmd;
