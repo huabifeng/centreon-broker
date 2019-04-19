@@ -137,7 +137,7 @@ void failover::run() {
       {
         std::shared_ptr<io::stream> s(_endpoint->open());
         {
-          QMutexLocker stream_lock(&_streamm);
+          std::lock_guard<std::timed_mutex> stream_lock(_streamm);
           _stream = s;
         }
         _initialized = true;
@@ -214,7 +214,7 @@ void failover::run() {
 
         // Check for update.
         if (_update) {
-          QMutexLocker stream_lock(&_streamm);
+          std::lock_guard<std::timed_mutex> stream_lock(_streamm);
           _stream->update();
           _update = false;
         }
@@ -228,7 +228,7 @@ void failover::run() {
             << _name << "'";
           _update_status("reading event from stream");
           try {
-            QMutexLocker stream_lock(&_streamm);
+            std::lock_guard<std::timed_mutex> stream_lock(_streamm);
             timed_out_stream = !_stream->read(d, 0);
           }
           catch (exceptions::shutdown const& e) {
@@ -275,7 +275,7 @@ void failover::run() {
             _update_status("writing event to stream");
             int we(0);
             try {
-              QMutexLocker stream_lock(&_streamm);
+              std::lock_guard<std::timed_mutex> stream_lock(_streamm);
               we = _stream->write(d);
             }
             catch (exceptions::shutdown const& e) {
@@ -314,12 +314,12 @@ void failover::run() {
           if (should_commit) {
             should_commit = false;
             _next_timeout = now + 1;
-            QMutexLocker stream_lock(&_streamm);
+            std::lock_guard<std::timed_mutex> stream_lock(_streamm);
             we = _stream->flush();
           }
           else if (now >= _next_timeout) {
             _next_timeout = now + 1;
-            QMutexLocker stream_lock(&_streamm);
+            std::lock_guard<std::timed_mutex> stream_lock(_streamm);
             we = _stream->flush();
           }
           _subscriber->get_muxer().ack_events(we);
@@ -331,7 +331,7 @@ void failover::run() {
     catch (std::exception const& e) {
       logging::error(logging::high) << e.what();
       {
-        QMutexLocker stream_lock(&_streamm);
+        std::lock_guard<std::timed_mutex> stream_lock(_streamm);
         _stream.reset();
       }
       _launch_failover();
@@ -342,7 +342,7 @@ void failover::run() {
         << "' encountered an unknown exception, this is likely a "
         << "software bug that should be reported to Centreon Broker developers";
       {
-        QMutexLocker stream_lock(&_streamm);
+        std::lock_guard<std::timed_mutex> stream_lock(_streamm);
         _stream.reset();
       }
       _launch_failover();
@@ -351,7 +351,7 @@ void failover::run() {
 
     // Clear stream.
     {
-      QMutexLocker stream_lock(&_streamm);
+      std::lock_guard<std::timed_mutex> stream_lock(_streamm);
       _stream.reset();
     }
 
@@ -368,7 +368,7 @@ void failover::run() {
 
   // Clear stream.
   {
-    QMutexLocker stream_lock(&_streamm);
+    std::lock_guard<std::timed_mutex> stream_lock(_streamm);
     _stream.reset();
   }
 
@@ -458,7 +458,7 @@ bool failover::wait(unsigned long time) {
  */
 std::string failover::_get_state() {
   char const* ret = NULL;
-  if (_streamm.tryLock()) {
+  if (_streamm.try_lock_for(std::chrono::milliseconds(10))) {
     if (!_stream)
       ret = "connecting";
     else
@@ -467,7 +467,7 @@ std::string failover::_get_state() {
   }
   else
     ret = "blocked";
-  return (ret);
+  return ret;
 }
 
 /**
@@ -504,13 +504,17 @@ uset<unsigned int> failover::_get_write_filters() {
  */
 void failover::_forward_statistic(io::properties& tree) {
   {
-    QMutexLocker lock(&_statusm);
+    std::lock_guard<std::mutex> lock(_statusm);
     tree.add_property("status", io::property("status", _status));
   }
   {
-    QMutexLocker lock(&_streamm);
-    if (_stream)
-      _stream->statistics(tree);
+    std::unique_lock<std::timed_mutex> stream_lock(_streamm, std::defer_lock);
+    if (stream_lock.try_lock_for(std::chrono::milliseconds(100))) {
+      if (_stream)
+        _stream->statistics(tree);
+    }
+    else
+      tree.add_property("status", io::property("status", "busy"));
   }
   _subscriber->get_muxer().statistics(tree);
   io::properties subtree;
@@ -545,7 +549,6 @@ void failover::_launch_failover() {
  *  @param[in] status New status.
  */
 void failover::_update_status(std::string const& status) {
-  QMutexLocker lock(&_statusm);
+  std::lock_guard<std::mutex> lock(_statusm);
   _status = status;
-  return ;
 }

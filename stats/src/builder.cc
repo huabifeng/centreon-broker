@@ -166,8 +166,6 @@ void builder::build(serializer const& srz) {
   std::string buffer;
   srz.serialize(buffer, _root);
   _data.insert(0, buffer);
-
-  return ;
 }
 
 /**

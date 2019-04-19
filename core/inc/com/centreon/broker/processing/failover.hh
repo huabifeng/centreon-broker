@@ -21,8 +21,7 @@
 
 #  include <climits>
 #  include <ctime>
-#  include <QMutex>
-#  include <QVector>
+#  include <mutex>
 #  include <string>
 #  include "com/centreon/broker/io/endpoint.hh"
 #  include "com/centreon/broker/io/stream.hh"
@@ -109,12 +108,14 @@ namespace           processing {
 
     // Status.
     std::string     _status;
-    mutable QMutex  _statusm;
+    mutable std::mutex
+                    _statusm;
 
     // Stream.
     std::shared_ptr<io::stream>
                     _stream;
-    mutable QMutex  _streamm;
+    mutable std::timed_mutex
+                    _streamm;
   };
 }
 
