@@ -279,7 +279,7 @@ void stream::_clean_tables(unsigned int instance_id) {
          " WHERE h.instance_id=" << instance_id;
   _transversal_mysql.run_query(
            oss.str(),
-           "SQL: could not clean host dependencies table: ", false);
+           "SQL: could not clean service dependencies table: ", false);
 
   // Remove list of modules.
   logging::debug(logging::low)
