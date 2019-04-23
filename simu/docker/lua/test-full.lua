@@ -38,12 +38,14 @@ local step = {
   require('neb.flapping_status'),                   -- 18
   require('neb.host_dependency'),                   -- 19
   require('neb.host_parent'),                       -- 20
-  require('neb.instance_status'),                   -- 21
-  require('bam.ba_status'),                         -- 22
-  require('bam.kpi_status'),                        -- 23
-  require('bam.ba_events'),                         -- 24
-  require('bam.kpi_events'),                        -- 25
-  require('bam.dimension_truncate_table_signal'),   -- 26
+  require('neb.service_dependency'),                -- 21
+  require('neb.instance_status'),                   -- 22
+  require('neb.log'),                               -- 23
+  require('bam.ba_status'),                         -- 24
+  require('bam.kpi_status'),                        -- 25
+  require('bam.ba_events'),                         -- 26
+  require('bam.kpi_events'),                        -- 27
+  require('bam.dimension_truncate_table_signal'),   -- 28
 }
 
 -- Instances                  => 18
@@ -130,7 +132,7 @@ step[11].count = {
 
 -- Services status per host          => 20
 step[12].count = {
-  service = 50,
+  service = step[8].count.service,
   host = step[2].count.host,
   instance = step[2].count.instance,
   metric = 2,
@@ -159,7 +161,7 @@ step[15].count = {
 
 -- Acknowledgements
 step[16].count = {
-  service = 50,
+  service = step[8].count.service,
   host = step[2].count.host,
   instance = step[2].count.instance,
   continue = true,
@@ -167,7 +169,7 @@ step[16].count = {
 
 -- Event handler
 step[17].count = {
-  service = 50,
+  service = step[8].count.service,
   host = step[2].count.host,
   instance = step[2].count.instance,
   continue = true,
@@ -175,7 +177,7 @@ step[17].count = {
 
 -- Flapping status
 step[18].count = {
-  service = 50,
+  service = step[8].count.service,
   host = step[2].count.host,
   instance = step[2].count.instance,
   continue = true,
@@ -195,38 +197,54 @@ step[20].count = {
   continue = true,
 }
 
--- Instance status
+-- Service dependency
 step[21].count = {
+  service = step[8].count.service,
+  host = step[2].count.host,
+  instance = step[2].count.instance,
+  continue = true,
+}
+
+-- Instance status
+step[22].count = {
   instance = step[1].count.instance,
   continue = true,
 }
 
--- Ba status
-step[22].count = {
-  ba = 100,
-  continue = true,
-}
-
--- KPI status
+-- Logs
 step[23].count = {
-  kpi = 100,
-  continue = true,
+  host = step[2].count.host,
+  instance = step[1].count.instance,
+  service = step[8].count.service,
+  log = 50,
 }
 
--- Ba events
+-- Ba status
 step[24].count = {
   ba = 100,
   continue = true,
 }
 
--- KPI events
+-- KPI status
 step[25].count = {
   kpi = 100,
   continue = true,
 }
 
--- Table truncate signal
+-- Ba events
 step[26].count = {
+  ba = 100,
+  continue = true,
+}
+
+-- KPI events
+step[27].count = {
+  kpi = 100,
+  continue = true,
+}
+
+-- Table truncate signal
+step[28].count = {
   continue = false,
 }
 
