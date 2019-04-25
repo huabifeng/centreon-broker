@@ -22,10 +22,10 @@ add_subdirectory("googletest")
 
 # Include directories.
 include_directories("${PROJECT_SOURCE_DIR}/bam/inc")
-include_directories("${PROJECT_SOURCE_DIR}/storage/inc")
 include_directories("${PROJECT_SOURCE_DIR}/lua/inc")
 include_directories("${PROJECT_SOURCE_DIR}/neb/inc")
 include_directories("${PROJECT_SOURCE_DIR}/simu/inc")
+include_directories("${PROJECT_SOURCE_DIR}/storage/inc")
 
 # Unit test executable.
 add_executable("ut"
@@ -48,10 +48,12 @@ add_executable("ut"
   "${TESTS_DIR}/file/test_file.cc"
   "${TESTS_DIR}/file/test_fs_browser.hh"
   "${TESTS_DIR}/file/test_fs_browser.cc"
+  "${TESTS_DIR}/mysql/mysql.cc"
   "${TESTS_DIR}/multiplexing/muxer/read.cc"
   # Module sources.
   ${TESTS_SOURCES}
 )
+set_target_properties("ut" PROPERTIES COMPILE_FLAGS "${MYSQL_CFLAGS}")
 target_link_libraries("ut" "gtest" ${TESTS_LIBRARIES} ${NEB} "rokerbase" "roker")
 
 add_test(NAME tests COMMAND ut)
