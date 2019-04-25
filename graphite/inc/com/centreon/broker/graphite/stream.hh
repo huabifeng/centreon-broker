@@ -24,7 +24,6 @@
 #  include <map>
 #  include <memory>
 #  include <mutex>
-#  include <QSqlDatabase>
 #  include <QString>
 #  include <QTcpSocket>
 #  include <utility>
