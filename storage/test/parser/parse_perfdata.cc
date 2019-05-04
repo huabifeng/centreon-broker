@@ -18,7 +18,7 @@
 
 #include <cmath>
 #include <gtest/gtest.h>
-#include <QList>
+#include <list>
 #include "com/centreon/broker/config/applier/init.hh"
 #include "com/centreon/broker/storage/exceptions/perfdata.hh"
 #include "com/centreon/broker/storage/parser.hh"
@@ -32,7 +32,7 @@ using namespace com::centreon::broker;
 TEST(StorageParserParsePerfdata, Simple1) {
   config::applier::init();
   // Parse perfdata.
-  QList<storage::perfdata> list;
+  std::list<storage::perfdata> list;
   storage::parser p;
   p.parse_perfdata(
     "time=2.45698s;2.000000;5.000000;0.000000;10.000000",
@@ -40,7 +40,7 @@ TEST(StorageParserParsePerfdata, Simple1) {
 
   // Assertions.
   ASSERT_EQ(list.size(), 1);
-  QList<storage::perfdata>::const_iterator it(list.begin());
+  std::list<storage::perfdata>::const_iterator it(list.begin());
   storage::perfdata expected;
   expected.name("time");
   expected.value_type(storage::perfdata::gauge);
@@ -57,13 +57,13 @@ TEST(StorageParserParsePerfdata, Simple1) {
 
 TEST(StorageParserParsePerfdata, Simple2) {
   // Parse perfdata.
-  QList<storage::perfdata> list;
+  std::list<storage::perfdata> list;
   storage::parser p;
   p.parse_perfdata("'ABCD12E'=18.00%;15:;10:;0;100", list);
 
   // Assertions.
   ASSERT_EQ(list.size(), 1);
-  QList<storage::perfdata>::const_iterator it(list.begin());
+  std::list<storage::perfdata>::const_iterator it(list.begin());
   storage::perfdata expected;
   expected.name("ABCD12E");
   expected.value_type(storage::perfdata::gauge);
@@ -80,7 +80,7 @@ TEST(StorageParserParsePerfdata, Simple2) {
 
 TEST(StorageParserParsePerfdata, Complex1) {
   // Parse perfdata.
-  QList<storage::perfdata> list;
+  std::list<storage::perfdata> list;
   storage::parser p;
   p.parse_perfdata(
       "time=2.45698s;;nan;;inf d[metric]=239765B/s;5;;-inf; "
@@ -90,7 +90,7 @@ TEST(StorageParserParsePerfdata, Complex1) {
 
   // Assertions.
   ASSERT_EQ(list.size(), 7);
-  QList<storage::perfdata>::const_iterator it(list.begin());
+  std::list<storage::perfdata>::const_iterator it(list.begin());
   storage::perfdata expected;
 
   // #1.
@@ -180,7 +180,7 @@ TEST(StorageParserParsePerfdata, Complex1) {
 // Then the corresponding perfdata list is returned
 TEST(StorageParserParsePerfdata, Loop) {
   // Objects.
-  QList<storage::perfdata> list;
+  std::list<storage::perfdata> list;
   storage::parser p;
 
   // Loop.
@@ -193,7 +193,7 @@ TEST(StorageParserParsePerfdata, Loop) {
 
     // Assertions.
     ASSERT_EQ(list.size(), 1);
-    QList<storage::perfdata>::const_iterator it(list.begin());
+    std::list<storage::perfdata>::const_iterator it(list.begin());
     storage::perfdata expected;
     expected.name("time");
     expected.value_type(storage::perfdata::counter);
@@ -215,7 +215,7 @@ TEST(StorageParserParsePerfdata, Loop) {
 // Then it throws a storage::exceptions::perfdata
 TEST(StorageParserParsePerfdata, Incorrect1) {
   // Objects.
-  QList<storage::perfdata> list;
+  std::list<storage::perfdata> list;
   storage::parser p;
 
   // Attempt to parse perfdata.
@@ -229,7 +229,7 @@ TEST(StorageParserParsePerfdata, Incorrect1) {
 // Then it throws a storage::exceptions::perfdata
 TEST(StorageParserParsePerfdata, Incorrect2) {
   // Given
-  QList<storage::perfdata> list;
+  std::list<storage::perfdata> list;
   storage::parser p;
 
   // Then

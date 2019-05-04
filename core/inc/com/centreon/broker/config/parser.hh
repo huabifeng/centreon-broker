@@ -20,7 +20,6 @@
 #  define CCB_CONFIG_PARSER_HH
 
 #  include <QDomElement>
-#  include <QList>
 #  include <QString>
 #  include "com/centreon/broker/config/state.hh"
 #  include "com/centreon/broker/namespace.hh"

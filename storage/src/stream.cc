@@ -308,7 +308,7 @@ int stream::write(std::shared_ptr<io::data> const& data) {
 
       if (!ss->perf_data.isEmpty()) {
         // Parse perfdata.
-        QList<perfdata> pds;
+        std::list<perfdata> pds;
         parser p;
         try {
           p.parse_perfdata(ss->perf_data, pds);
@@ -322,7 +322,7 @@ int stream::write(std::shared_ptr<io::data> const& data) {
         }
 
         // Loop through all metrics.
-        for (QList<perfdata>::iterator
+        for (std::list<perfdata>::iterator
                it(pds.begin()),
                end(pds.end());
              it != end;

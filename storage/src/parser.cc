@@ -164,7 +164,7 @@ parser& parser::operator=(parser const& pp) {
  */
 void parser::parse_perfdata(
                QString const& str,
-               QList<perfdata>& pd) {
+               std::list<perfdata>& pd) {
   // Here we will use a UTF-8 copy of the UTF-16 QString. This will
   // allow us to work with standard C string functions. The key thing
   // to remember is that ASCII-compatible character encodings cannot
